@@ -27,7 +27,7 @@ function buildDoc(entries: OrderedEntry[], opts: DocxOptions, variant: 'scorer' 
   doc.setFontSize(16);
   doc.text(title, 40, 40);
 
-  const head = ['Entry #'];
+  const head = [variant === 'scorer' ? 'Entry #' : 'No.'];
   if (opts.includeThumbnails) head.push('Image');
   head.push('Image Title');
   if (includePhotographer) head.push('Photographer');
