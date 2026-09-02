@@ -337,6 +337,15 @@ footer.suite-footer {
   transition: color 0.2s ease;
 }
 
+.footer-link {
+  color: var(--dim);
+}
+
+.footer-link:hover,
+.footer-link:focus-visible {
+  color: var(--amber);
+}
+
 .social-label {
   font-size: 0.8rem;
 }
