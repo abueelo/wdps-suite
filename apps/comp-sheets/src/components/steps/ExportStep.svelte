@@ -181,11 +181,13 @@
   {/if}
 
   {#if status === 'done'}
-    <p class="ok">{statusMessage}</p>
+    <p class="ok result-msg">{statusMessage}</p>
+    <button class="btn primary" onclick={runExport}>export again</button>
   {/if}
 
   {#if status === 'error'}
-    <p class="danger">{statusMessage}</p>
+    <p class="danger result-msg">{statusMessage}</p>
+    <button class="btn primary" onclick={runExport}>export again</button>
   {/if}
 
   {#if failedImages.length > 0}
@@ -214,6 +216,10 @@
   }
   .progress-block {
     margin-top: 1.25rem;
+  }
+  .result-msg {
+    margin-top: 1.25rem;
+    margin-bottom: 0.75rem;
   }
   .image-progress {
     list-style: none;
