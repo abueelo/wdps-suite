@@ -1,4 +1,16 @@
-import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, ImageRun, WidthType, HeadingLevel } from 'docx';
+import {
+  Document,
+  Packer,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  TextRun,
+  ImageRun,
+  WidthType,
+  HeadingLevel,
+  TableLayoutType
+} from 'docx';
 import type { OrderedEntry } from '../types.js';
 
 export interface DocxOptions {
@@ -10,19 +22,37 @@ export interface DocxOptions {
 const THUMB_DISPLAY_WIDTH = 90; // px in the doc
 const THUMB_DISPLAY_HEIGHT = 60;
 
-function headerCell(text: string): TableCell {
+// Fixed percentage widths per column type; "Image Title" — the one
+// column with genuinely variable-length content — absorbs whatever's
+// left so every row always sums to exactly 100% of the page width. Cells
+// need an explicit width or Word auto-fits columns to their header text
+// instead of stretching the table to fill the page, which is what was
+// making these look squished.
+const ENTRY_WIDTH = 8;
+const THUMB_WIDTH = 15;
+const PHOTOGRAPHER_WIDTH = 22;
+const SCORE_WIDTH = 12;
+const NOTES_WIDTH = 25;
+
+function cellWidth(percent: number) {
+  return { size: percent, type: WidthType.PERCENTAGE };
+}
+
+function headerCell(text: string, width: number): TableCell {
   return new TableCell({
+    width: cellWidth(width),
     children: [new Paragraph({ children: [new TextRun({ text, bold: true })] })]
   });
 }
 
-function textCell(text: string): TableCell {
-  return new TableCell({ children: [new Paragraph(text)] });
+function textCell(text: string, width: number): TableCell {
+  return new TableCell({ width: cellWidth(width), children: [new Paragraph(text)] });
 }
 
-function thumbnailCell(bytes: Uint8Array | undefined): TableCell {
-  if (!bytes) return new TableCell({ children: [new Paragraph('')] });
+function thumbnailCell(bytes: Uint8Array | undefined, width: number): TableCell {
+  if (!bytes) return new TableCell({ width: cellWidth(width), children: [new Paragraph('')] });
   return new TableCell({
+    width: cellWidth(width),
     children: [
       new Paragraph({
         children: [
@@ -37,41 +67,44 @@ function thumbnailCell(bytes: Uint8Array | undefined): TableCell {
   });
 }
 
-function scoreCell(): TableCell {
-  // Blank, sized for handwriting a score in when the sheet is printed.
-  return new TableCell({ children: [new Paragraph('')], width: { size: 12, type: WidthType.PERCENTAGE } });
-}
-
-function notesCell(): TableCell {
-  // Blank and wider than the score cell — room for the judge to jot
-  // down comments on each image while scoring.
-  return new TableCell({ children: [new Paragraph('')], width: { size: 25, type: WidthType.PERCENTAGE } });
+function blankCell(width: number): TableCell {
+  // Blank, sized for handwriting a score/note in when the sheet is printed.
+  return new TableCell({ children: [new Paragraph('')], width: cellWidth(width) });
 }
 
 function buildTable(entries: OrderedEntry[], opts: DocxOptions, variant: 'scorer' | 'judge'): Table {
   const includePhotographer = variant === 'scorer';
   const includeNotes = variant === 'judge';
 
-  const headers = ['Entry #'];
-  if (opts.includeThumbnails) headers.push('Thumbnail');
-  headers.push('Image Title');
-  if (includePhotographer) headers.push('Photographer');
-  headers.push('Score');
-  if (includeNotes) headers.push('Notes');
+  let titleWidth = 100 - ENTRY_WIDTH - SCORE_WIDTH;
+  if (opts.includeThumbnails) titleWidth -= THUMB_WIDTH;
+  if (includePhotographer) titleWidth -= PHOTOGRAPHER_WIDTH;
+  if (includeNotes) titleWidth -= NOTES_WIDTH;
 
-  const headerRow = new TableRow({ children: headers.map(headerCell) });
+  const headerCells = [headerCell('Entry #', ENTRY_WIDTH)];
+  if (opts.includeThumbnails) headerCells.push(headerCell('Thumbnail', THUMB_WIDTH));
+  headerCells.push(headerCell('Image Title', titleWidth));
+  if (includePhotographer) headerCells.push(headerCell('Photographer', PHOTOGRAPHER_WIDTH));
+  headerCells.push(headerCell('Score', SCORE_WIDTH));
+  if (includeNotes) headerCells.push(headerCell('Notes', NOTES_WIDTH));
+
+  const headerRow = new TableRow({ children: headerCells, tableHeader: true });
 
   const rows = entries.map((entry) => {
-    const cells: TableCell[] = [textCell(String(entry.entryNumber))];
-    if (opts.includeThumbnails) cells.push(thumbnailCell(opts.thumbnails.get(entry.image.id)));
-    cells.push(textCell(entry.image.title || '(untitled)'));
-    if (includePhotographer) cells.push(textCell(entry.image.photographer));
-    cells.push(scoreCell());
-    if (includeNotes) cells.push(notesCell());
+    const cells: TableCell[] = [textCell(String(entry.entryNumber), ENTRY_WIDTH)];
+    if (opts.includeThumbnails) cells.push(thumbnailCell(opts.thumbnails.get(entry.image.id), THUMB_WIDTH));
+    cells.push(textCell(entry.image.title || '(untitled)', titleWidth));
+    if (includePhotographer) cells.push(textCell(entry.image.photographer, PHOTOGRAPHER_WIDTH));
+    cells.push(blankCell(SCORE_WIDTH));
+    if (includeNotes) cells.push(blankCell(NOTES_WIDTH));
     return new TableRow({ children: cells });
   });
 
-  return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [headerRow, ...rows] });
+  return new Table({
+    width: cellWidth(100),
+    layout: TableLayoutType.FIXED,
+    rows: [headerRow, ...rows]
+  });
 }
 
 function buildDoc(entries: OrderedEntry[], opts: DocxOptions, variant: 'scorer' | 'judge'): Document {

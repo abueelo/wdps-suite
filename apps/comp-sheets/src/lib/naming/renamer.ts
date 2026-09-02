@@ -1,35 +1,34 @@
 import type { ImageRecord } from '../types.js';
 
-function sanitizeForFilename(name: string): string {
-  return name
+function sanitizeForFilename(value: string): string {
+  return value
     .trim()
     .replace(/\s+/g, '_')
     .replace(/[^A-Za-z0-9_]/g, '');
 }
 
+export interface EntryFilenames {
+  scorerFilename: string;
+  judgeFilename: string;
+}
+
 /**
- * Assigns each included image its final filename, per-photographer:
- * NN_PHOTOGRAPHER_NAME.jpg, where NN starts at 01 and increases per
- * photographer in their priority order. This numbering is independent of
- * (and unaffected by) the competition entry order/randomization.
+ * Builds the two filenames for one competition entry:
+ *   scorer: NN_Photographer_Title.jpg
+ *   judge:  NN_Title.jpg — no photographer name, so the judge can't see
+ *           who took it just by looking at the file list.
+ *
+ * NN is the competition entry number (same one shown in the docx Entry #
+ * column), not a per-photographer counter, so a judge/scorer can always
+ * match a file straight back to its row on the sheet — including when
+ * randomise-order is on.
  */
-export function assignFilenames(images: ImageRecord[]): Map<string, string> {
-  const byPhotographer = new Map<string, ImageRecord[]>();
-  for (const img of images) {
-    const list = byPhotographer.get(img.photographer) ?? [];
-    list.push(img);
-    byPhotographer.set(img.photographer, list);
-  }
-
-  const filenames = new Map<string, string>();
-  for (const [photographer, list] of byPhotographer) {
-    const sorted = [...list].sort((a, b) => a.priority - b.priority);
-    const safeName = sanitizeForFilename(photographer);
-    sorted.forEach((img, index) => {
-      const nn = String(index + 1).padStart(2, '0');
-      filenames.set(img.id, `${nn}_${safeName}.jpg`);
-    });
-  }
-
-  return filenames;
+export function buildFilenames(entryNumber: number, image: ImageRecord): EntryFilenames {
+  const nn = String(entryNumber).padStart(2, '0');
+  const safePhotographer = sanitizeForFilename(image.photographer) || 'Unknown';
+  const safeTitle = sanitizeForFilename(image.title) || 'Untitled';
+  return {
+    scorerFilename: `${nn}_${safePhotographer}_${safeTitle}.jpg`,
+    judgeFilename: `${nn}_${safeTitle}.jpg`
+  };
 }

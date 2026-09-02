@@ -226,14 +226,53 @@ input::placeholder {
   opacity: 1;
 }
 
+/* bordered box checkbox, matching the rest of the site's boxy controls
+   (buttons, text inputs) rather than the OS-native checkbox — bigger and
+   higher-contrast too. */
 input[type="checkbox"] {
-  accent-color: var(--amber);
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1.3em;
+  height: 1.3em;
+  margin: 0;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: border-color 0.15s ease;
+}
+
+input[type="checkbox"]:hover {
+  border-color: var(--border-hover);
+}
+
+input[type="checkbox"]:focus-visible {
+  outline: none;
+  border-color: var(--amber);
+}
+
+input[type="checkbox"]:checked {
+  border-color: var(--amber);
+}
+
+input[type="checkbox"]:checked::after {
+  content: "×";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--amber);
+  font-size: 1.15em;
+  line-height: 1;
 }
 
 label {
   display: inline-flex;
   align-items: center;
-  gap: 0.6ch;
+  gap: 0.8ch;
+  cursor: pointer;
 }
 
 /* tables (review table, cap preview) */

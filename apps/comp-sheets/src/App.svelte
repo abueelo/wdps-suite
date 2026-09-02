@@ -19,6 +19,7 @@
 
   function goTo(id: StepId) {
     step = id;
+    window.scrollTo(0, 0);
   }
 
   $effect(() => {
@@ -69,7 +70,7 @@
   {:else if step === 3}
     <SettingsStep onNext={() => goTo(4)} onBack={() => goTo(2)} />
   {:else if step === 4}
-    <ExportStep onBack={() => goTo(3)} />
+    <ExportStep onBack={() => goTo(3)} onBackToStart={() => goTo(1)} />
   {/if}
 
   <footer class="suite-footer">

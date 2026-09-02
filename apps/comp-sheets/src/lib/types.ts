@@ -47,7 +47,8 @@ export interface CapError {
 export interface OrderedEntry {
   entryNumber: number;
   image: ImageRecord;
-  filename: string; // NN_PHOTOGRAPHER_NAME.jpg
+  scorerFilename: string; // NN_Photographer_Title.jpg
+  judgeFilename: string; // NN_Title.jpg — no photographer name
 }
 
 export type ProcessingStage = 'decode' | 'resize' | 'encode' | 'dpi' | 'thumbnail' | 'done';

@@ -10,11 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@wdps/shared-ui": "*",
     "@wdps/shared-bus": "*",
+    "@wdps/shared-ui": "*",
     "comlink": "^4.4.2",
     "docx": "^9.1.1",
     "fflate": "^0.8.2",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "piexifjs": "^1.0.6",
     "utif2": "^4.1.0"
   },

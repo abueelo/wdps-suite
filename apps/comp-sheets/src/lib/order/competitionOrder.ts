@@ -1,5 +1,5 @@
 import type { ImageRecord, OrderedEntry } from '../types.js';
-import { assignFilenames } from '../naming/renamer.js';
+import { buildFilenames } from '../naming/renamer.js';
 
 /** mulberry32 — tiny seeded PRNG so a shuffle is reproducible/debuggable. */
 function mulberry32(seed: number): () => number {
@@ -37,12 +37,11 @@ export interface OrderOptions {
  * - randomize=true: a full Fisher–Yates shuffle of the included set.
  *
  * Both judge and scorer exports must consume the SAME OrderedEntry[] so
- * their entry numbers and filenames line up exactly — only the presence
- * of the photographer name in the docx differs between the two.
+ * their entry numbers line up exactly — only the presence of the
+ * photographer name (in the docx, and in the scorer filename) differs
+ * between the two.
  */
 export function buildCompetitionOrder(included: ImageRecord[], options: OrderOptions): OrderedEntry[] {
-  const filenames = assignFilenames(included);
-
   let ordered: ImageRecord[];
   if (options.randomize) {
     const rng = mulberry32(options.seed ?? Date.now());
@@ -60,9 +59,8 @@ export function buildCompetitionOrder(included: ImageRecord[], options: OrderOpt
     });
   }
 
-  return ordered.map((image, index) => ({
-    entryNumber: index + 1,
-    image,
-    filename: filenames.get(image.id)!
-  }));
+  return ordered.map((image, index) => {
+    const entryNumber = index + 1;
+    return { entryNumber, image, ...buildFilenames(entryNumber, image) };
+  });
 }

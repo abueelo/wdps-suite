@@ -7,15 +7,30 @@
   import { buildCompetitionOrder } from '../../lib/order/competitionOrder.js';
   import { processJobs } from '../../lib/processing/workerPool.js';
   import { buildScorerDoc, buildJudgeDoc } from '../../lib/export/docxBuilder.js';
+  import { buildScorerPdf, buildJudgePdf } from '../../lib/export/pdfBuilder.js';
   import { streamExportZip } from '../../lib/export/zipBuilder.js';
   import { saveStreamedFile } from '../../lib/export/download.js';
-  import { putPayload, IMAGE_SET_TYPE } from '@wdps/shared-bus';
+  import { putPayload, compatibleApps, IMAGE_SET_TYPE } from '@wdps/shared-bus';
   import type { ImageRecord, ProcessedImage, OrderedEntry } from '../../lib/types.js';
 
-  let { onBack }: { onBack: () => void } = $props();
+  let { onBack, onBackToStart }: { onBack: () => void; onBackToStart: () => void } = $props();
+
+  // Only apps that actually declare support for this export's payload
+  // type are offered as a destination — and if none do (true today,
+  // since comp-sheets is the only app in the suite so far), the whole
+  // "send to another app" option is hidden rather than shown with
+  // nothing to pick.
+  const sendTargets = compatibleApps(IMAGE_SET_TYPE, 'comp-sheets');
+  let selectedTargets = $state<Set<string>>(new Set());
+
+  function toggleTarget(id: string, checked: boolean) {
+    const next = new Set(selectedTargets);
+    if (checked) next.add(id);
+    else next.delete(id);
+    selectedTargets = next;
+  }
 
   let competitionName = $state('competition');
-  let sendToBus = $state(false);
   let status = $state<'idle' | 'processing' | 'done' | 'error'>('idle');
   let statusMessage = $state('');
   let failedImages = $state<{ id: string; name: string; error: string }[]>([]);
@@ -80,9 +95,11 @@
 
     statusMessage = 'building score sheets…';
     const docOpts = { competitionName, includeThumbnails: settingsStore.value.includeThumbnails, thumbnails };
-    const [scorerDocBlob, judgeDocBlob] = await Promise.all([
+    const [scorerDocBlob, judgeDocBlob, scorerPdfBytes, judgePdfBytes] = await Promise.all([
       buildScorerDoc(usableOrder, docOpts),
-      buildJudgeDoc(usableOrder, docOpts)
+      buildJudgeDoc(usableOrder, docOpts),
+      buildScorerPdf(usableOrder, docOpts),
+      buildJudgePdf(usableOrder, docOpts)
     ]);
     const [scorerDocBytes, judgeDocBytes] = await Promise.all([
       scorerDocBlob.arrayBuffer().then((b) => new Uint8Array(b)),
@@ -93,24 +110,24 @@
     progressStore.setZipStage('building');
     const outcome = await saveStreamedFile(`${competitionName}.zip`, 'application/zip', (onChunk) =>
       streamExportZip(
-        { entries: usableOrder, processed, scorerDocBytes, judgeDocBytes, competitionName },
+        { entries: usableOrder, processed, scorerDocBytes, judgeDocBytes, scorerPdfBytes, judgePdfBytes, competitionName },
         onChunk
       )
     );
     progressStore.setZipStage('done');
 
-    if (sendToBus) {
+    if (selectedTargets.size > 0) {
       statusMessage = 'sending to wdps bus…';
       await putPayload({
         sourceApp: 'comp-sheets',
         type: IMAGE_SET_TYPE,
         label: `${competitionName} — scorer set (${usableOrder.length} images)`,
         items: usableOrder.map((entry) => ({
-          filename: entry.filename,
+          filename: entry.scorerFilename,
           blob: new Blob([processed.get(entry.image.id)!.bytes], { type: 'image/jpeg' }),
           contentType: 'image/jpeg'
         })),
-        meta: { competitionName, entryCount: usableOrder.length }
+        meta: { competitionName, entryCount: usableOrder.length, targets: [...selectedTargets] }
       });
     }
 
@@ -132,12 +149,21 @@
     />
   </div>
 
-  <div class="field">
-    <label>
-      <input type="checkbox" checked={sendToBus} onchange={(e) => (sendToBus = (e.currentTarget as HTMLInputElement).checked)} />
-      also send the processed images to another wdps app
-    </label>
-  </div>
+  {#if sendTargets.length > 0}
+    <div class="field">
+      <p class="dim">also send the processed images to:</p>
+      {#each sendTargets as target}
+        <label>
+          <input
+            type="checkbox"
+            checked={selectedTargets.has(target.id)}
+            onchange={(e) => toggleTarget(target.id, (e.currentTarget as HTMLInputElement).checked)}
+          />
+          {target.name}
+        </label>
+      {/each}
+    </div>
+  {/if}
 
   {#if status === 'idle'}
     <button class="btn primary" onclick={runExport}>build &amp; download zip</button>
@@ -176,6 +202,7 @@
 
   <div class="nav-row">
     <button class="btn" onclick={onBack} disabled={status === 'processing'}>← back</button>
+    <button class="btn" onclick={onBackToStart} disabled={status === 'processing'}>back to start</button>
   </div>
 </section>
 
@@ -202,6 +229,8 @@
     margin-top: 1rem;
   }
   .nav-row {
+    display: flex;
+    gap: 1rem;
     margin-top: 1.5rem;
   }
 </style>

@@ -37,6 +37,24 @@
     imagesStore.update(record.id, { priority: swapWith.priority });
     imagesStore.update(swapWith.id, { priority: record.priority });
   }
+
+  // Drag-and-drop reordering, scoped to one photographer's list at a
+  // time (dragging across photographers wouldn't mean anything — cap
+  // priority is per-photographer). The arrow buttons stay as a
+  // keyboard/screen-reader-usable fallback since native drag-and-drop
+  // isn't operable that way.
+  let dragging = $state<{ photographer: string; recordId: string } | null>(null);
+
+  function reorderWithinGroup(photographer: string, draggedId: string, targetId: string) {
+    if (draggedId === targetId) return;
+    const list = [...(grouped.get(photographer) ?? [])];
+    const fromIdx = list.findIndex((r) => r.id === draggedId);
+    const toIdx = list.findIndex((r) => r.id === targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+    const [moved] = list.splice(fromIdx, 1);
+    list.splice(toIdx, 0, moved);
+    list.forEach((r, i) => imagesStore.update(r.id, { priority: i }));
+  }
 </script>
 
 <section class="panel">
@@ -98,13 +116,26 @@
       <p class="photographer-name">{photographer || '(unnamed)'}</p>
       <ol>
         {#each list as record, i (record.id)}
-          <li class:excluded={!isIncluded(record)}>
+          <li
+            class:excluded={!isIncluded(record)}
+            class:dragging={dragging?.recordId === record.id}
+            draggable="true"
+            ondragstart={() => { dragging = { photographer, recordId: record.id }; }}
+            ondragover={(e) => e.preventDefault()}
+            ondrop={(e) => {
+              e.preventDefault();
+              if (dragging && dragging.photographer === photographer) reorderWithinGroup(photographer, dragging.recordId, record.id);
+              dragging = null;
+            }}
+            ondragend={() => { dragging = null; }}
+          >
+            <span class="drag-handle" aria-hidden="true">≡</span>
             <span class="pos">{i + 1}.</span>
             <span class="title">{record.title || record.originalName}</span>
             {#if !isIncluded(record)}<span class="dim">— excluded (over cap)</span>{/if}
             <span class="move-buttons">
-              <button class="link-btn" disabled={i === 0} onclick={() => move(record, -1)}>↑</button>
-              <button class="link-btn" disabled={i === list.length - 1} onclick={() => move(record, 1)}>↓</button>
+              <button class="link-btn" disabled={i === 0} onclick={() => move(record, -1)} aria-label="move up">↑</button>
+              <button class="link-btn" disabled={i === list.length - 1} onclick={() => move(record, 1)} aria-label="move down">↓</button>
             </span>
           </li>
         {/each}
@@ -149,11 +180,19 @@
     gap: 0.75ch;
     padding: 0.2em 0;
     border-bottom: 1px dotted var(--border);
+    cursor: grab;
+  }
+  ol li.dragging {
+    opacity: 0.4;
+    cursor: grabbing;
   }
   ol li.excluded {
     color: var(--dim);
     text-decoration: line-through;
     text-decoration-color: var(--border-hover);
+  }
+  .drag-handle {
+    color: var(--dim);
   }
   .pos {
     color: var(--dim);

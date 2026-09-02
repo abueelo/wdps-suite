@@ -84,3 +84,22 @@ export async function deletePayload(id: string): Promise<void> {
 // declare support for it. Kept here (rather than duplicated per-app)
 // since it's the contract between producer and consumer.
 export const IMAGE_SET_TYPE = 'image-set-jpeg-1920-72dpi';
+
+// A small static manifest of the suite's apps and what payload types
+// each one accepts. This is what "send to another app" checks against —
+// an app should only ever be offered as a destination if it actually
+// declares support for the payload type being sent, and the option
+// should disappear entirely if no other app currently does.
+export interface SuiteApp {
+  id: string;
+  name: string;
+  path: string;
+  acceptedTypes: string[];
+}
+
+export const SUITE_APPS: SuiteApp[] = [{ id: 'comp-sheets', name: 'comp-sheets', path: '/comp-sheets/', acceptedTypes: [IMAGE_SET_TYPE] }];
+
+/** Other apps (excluding `excludeId`) that accept `type`. */
+export function compatibleApps(type: string, excludeId?: string): SuiteApp[] {
+  return SUITE_APPS.filter((a) => a.id !== excludeId && a.acceptedTypes.includes(type));
+}
