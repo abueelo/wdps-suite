@@ -44,7 +44,7 @@
   }
 
   function updatePhotographer(record: ImageRecord, value: string) {
-    imagesStore.update(record.id, { photographer: value, confidence: value.trim() ? record.confidence : 'low' });
+    imagesStore.update(record.id, { photographer: value, confidence: value.trim() ? record.confidence : 'attention' });
   }
 
   function updateTitle(record: ImageRecord, value: string) {
@@ -60,9 +60,13 @@
   }
 
   const confidenceLabel: Record<ImageRecord['confidence'], string> = {
-    high: 'ok',
-    medium: 'warn',
-    low: 'danger'
+    ok: 'correctly formatted',
+    attention: 'needs attention'
+  };
+
+  const confidenceClass: Record<ImageRecord['confidence'], string> = {
+    ok: 'ok',
+    attention: 'warn'
   };
 </script>
 
@@ -122,7 +126,7 @@
                 placeholder="image title"
               />
             </td>
-            <td class={confidenceLabel[record.confidence]}>{record.confidence}</td>
+            <td class={confidenceClass[record.confidence]}>{confidenceLabel[record.confidence]}</td>
             <td><button class="link-btn danger remove-btn" onclick={() => removeRecord(record.id)} aria-label="remove image">×</button></td>
           </tr>
         {/each}

@@ -11,6 +11,10 @@ export interface ParsedName {
 const CAMERA_DEFAULT = /^(img|dsc|dscn|dcim|pxl|_mg|p|dji|mvimg)[-_]?\d+$/i;
 const PURELY_NUMERIC = /^\d+$/;
 
+// Expected convention: NN_Author_Title (a leading sequence number, preferably
+// two digits, then the author, then the title, separated by underscores).
+const LEADING_NUMBER = /^(\d+)[_-]+(.+)$/;
+
 function humanize(segment: string): string {
   return segment
     .replace(/[_-]+/g, ' ')
@@ -29,42 +33,82 @@ function isNameLikeToken(token: string): boolean {
   return /^[A-Za-z][A-Za-z .'-]*$/.test(trimmed) && !/\d/.test(trimmed);
 }
 
-export function parseFilename(originalName: string): ParsedName {
-  const withoutExt = originalName.replace(/\.[^.]+$/, '');
+/** Splits a blob into individual words, however they're joined: underscores, hyphens, spaces, or camelCase. */
+function splitWords(segment: string): string[] {
+  return segment
+    .split(/[_\-\s]+/)
+    .filter(Boolean)
+    .flatMap((piece) => piece.replace(/([a-z0-9])([A-Z])/g, '$1 $2').split(/\s+/).filter(Boolean));
+}
 
-  if (CAMERA_DEFAULT.test(withoutExt) || PURELY_NUMERIC.test(withoutExt) || withoutExt.trim() === '') {
-    return { photographer: '', title: '', confidence: 'low' };
-  }
+interface AuthorTitleGuess {
+  photographer: string;
+  title: string;
+  /** True only when the author/title boundary was unambiguous (exactly two top-level fields). */
+  clean: boolean;
+}
 
-  const rawParts = withoutExt.split(/[_-]+/).filter(Boolean);
+/**
+ * Splits "author + title" text (everything after the sequence number) into
+ * the two fields. When there's exactly one underscore left, the split is
+ * unambiguous. Otherwise — because photographer names and titles are both
+ * sometimes written with underscores between their own words, and a name
+ * can be one word or several — this checks the leading words against
+ * `knownAuthors` (names already seen unambiguously elsewhere in the same
+ * batch) before falling back to a plain two-word guess.
+ */
+function guessAuthorTitle(rest: string, knownAuthors: ReadonlySet<string>): AuthorTitleGuess {
+  const topFields = rest.split(/[_-]+/).filter(Boolean);
 
-  // No delimiter at all — just one blob (possibly camelCase). Not enough
-  // structure to confidently split a name out of a title.
-  if (rawParts.length <= 1) {
-    const humanized = titleCase(humanize(withoutExt));
+  if (topFields.length === 2) {
+    const [namePart, titlePart] = topFields;
     return {
-      photographer: '',
-      title: humanized,
-      confidence: isNameLikeToken(withoutExt) ? 'medium' : 'low'
+      photographer: titleCase(humanize(namePart)),
+      title: titleCase(humanize(titlePart)),
+      clean: isNameLikeToken(namePart)
     };
   }
 
-  // Exactly two delimited parts is the common "Name_Title" convention —
-  // the strongest, most unambiguous signal we get from a filename alone.
-  if (rawParts.length === 2) {
-    const [namePart, titlePart] = rawParts;
-    const photographer = titleCase(humanize(namePart));
-    const title = titleCase(humanize(titlePart));
-    const confidence: Confidence = isNameLikeToken(namePart) && isNameLikeToken(titlePart) ? 'high' : 'medium';
-    return { photographer, title, confidence };
+  const words = splitWords(rest);
+  if (words.length < 2) {
+    return { photographer: '', title: titleCase(words.join(' ')), clean: false };
   }
 
-  // Three or more parts: assume the first token is the name and
-  // everything else is the title. This is a default, not a certainty —
-  // a title that itself starts with a two-word name would fool it — so
-  // it's capped at medium confidence for the user to confirm.
-  const [namePart, ...titleParts] = rawParts;
-  const photographer = titleCase(humanize(namePart));
-  const title = titleCase(humanize(titleParts.join(' ')));
-  return { photographer, title, confidence: isNameLikeToken(namePart) ? 'medium' : 'low' };
+  let authorWordCount = words.length >= 3 ? 2 : 1;
+  for (let len = Math.min(words.length - 1, 3); len >= 1; len--) {
+    if (knownAuthors.has(words.slice(0, len).join(' ').toLowerCase())) {
+      authorWordCount = len;
+      break;
+    }
+  }
+
+  return {
+    photographer: titleCase(words.slice(0, authorWordCount).join(' ')),
+    title: titleCase(words.slice(authorWordCount).join(' ')),
+    clean: false
+  };
+}
+
+export function parseFilename(originalName: string, knownAuthors: ReadonlySet<string> = new Set()): ParsedName {
+  const withoutExt = originalName.replace(/\.[^.]+$/, '');
+
+  if (CAMERA_DEFAULT.test(withoutExt) || PURELY_NUMERIC.test(withoutExt) || withoutExt.trim() === '') {
+    return { photographer: '', title: '', confidence: 'attention' };
+  }
+
+  const leadingNumber = LEADING_NUMBER.exec(withoutExt);
+
+  // No sequence number prefix at all — doesn't match the expected
+  // NN_Author_Title convention, so flag it regardless of what we can
+  // still guess from the remaining structure.
+  if (!leadingNumber) {
+    const guess = guessAuthorTitle(withoutExt, knownAuthors);
+    return { photographer: guess.photographer, title: guess.title, confidence: 'attention' };
+  }
+
+  const [, numberStr, rest] = leadingNumber;
+  const guess = guessAuthorTitle(rest, knownAuthors);
+  const correctlyFormatted = numberStr.length === 2 && guess.clean;
+
+  return { photographer: guess.photographer, title: guess.title, confidence: correctlyFormatted ? 'ok' : 'attention' };
 }
