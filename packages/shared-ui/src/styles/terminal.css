@@ -77,15 +77,22 @@ a:focus-visible {
   50% { opacity: 0; }
 }
 
-/* header / nav, matching russl.dev's [key] label pattern */
+/* header / nav, matching russl.dev's [key] label pattern.
+   The banner sits full-width at the top of the header; .head-row is the
+   tagline + nav sitting together on the row below it, exactly like the
+   source site's own <div class="head-row">. */
 
 header.suite-header {
+  margin-bottom: 1rem;
+}
+
+.head-row {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
   gap: 0.75rem 4ch;
-  margin-bottom: 1rem;
+  margin-top: 1rem;
 }
 
 nav.bracket-nav {
@@ -290,4 +297,46 @@ table.data tr.excluded td {
   user-select: none;
   overflow: hidden;
   white-space: nowrap;
+}
+
+/* footer, matching russl.dev's own (ascii social icons + a small
+   signature line) */
+
+footer.suite-footer {
+  margin-top: 2.75rem;
+  text-align: center;
+  color: var(--dim);
+  font-size: 0.85rem;
+}
+
+.social {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 4ch;
+  margin-bottom: 1.25rem;
+}
+
+.social a {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  color: var(--dim);
+}
+
+.social a:hover,
+.social a:focus-visible {
+  color: var(--amber);
+  text-decoration: none;
+}
+
+.social pre {
+  font-size: 0.3rem;
+  line-height: 1.2;
+  transition: color 0.2s ease;
+}
+
+.social-label {
+  font-size: 0.8rem;
 }

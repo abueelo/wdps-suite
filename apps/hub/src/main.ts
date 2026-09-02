@@ -19,3 +19,6 @@ bindShortcuts({
   t: () => toggle.click(),
   c: () => { window.location.href = '/comp-sheets/'; }
 });
+
+const yearEl = document.getElementById('year');
+if (yearEl) yearEl.textContent = String(new Date().getFullYear());

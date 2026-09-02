@@ -35,16 +35,16 @@
 
 <div class="page">
   <header class="suite-header">
-    <div>
-      <pre class="name" aria-hidden="true" style="--banner-cols: 30;"> █▀▀ █▀█ █▄ ▄█ █▀█  ▄▀▀ █ █ █▀▀ █▀▀ ▀█▀ ▄▀▀
+    <pre class="name" aria-hidden="true" style="--banner-cols: 30;"> █▀▀ █▀█ █▄ ▄█ █▀█  ▄▀▀ █ █ █▀▀ █▀▀ ▀█▀ ▄▀▀
  █▄▄ █▄█ █ ▀ █ █▀▀  ▄██ █▀█ ██▄ ██▄  █  ▄██</pre>
-      <h1 class="visually-hidden">comp-sheets</h1>
+    <h1 class="visually-hidden">comp-sheets</h1>
+    <div class="head-row">
       <p class="tagline dim">rename &amp; export competition entries, entirely in your browser<span class="cursor" aria-hidden="true">█</span></p>
+      <nav class="bracket-nav" aria-label="theme and suite">
+        <a href="/"><span class="key" aria-hidden="true">[h]</span> wdps</a>
+        <ThemeToggle />
+      </nav>
     </div>
-    <nav class="bracket-nav" aria-label="theme and suite">
-      <a href="/"><span class="key" aria-hidden="true">[h]</span> wdps</a>
-      <ThemeToggle />
-    </nav>
   </header>
 
   <nav class="bracket-nav step-nav" aria-label="steps">
@@ -71,6 +71,10 @@
   {:else if step === 4}
     <ExportStep onBack={() => goTo(3)} />
   {/if}
+
+  <footer class="suite-footer">
+    <p><span aria-hidden="true">☼ </span>wdps · {new Date().getFullYear()}<span aria-hidden="true"> ☼</span></p>
+  </footer>
 </div>
 
 <style>

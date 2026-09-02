@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>wdps</title>
-  <meta name="description" content="wdps — tools for the club's digital competitions." />
+  <meta name="description" content="wdps — photographic tools." />
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="wdps">
   <meta property="og:title" content="wdps">
@@ -12,7 +12,7 @@
   <meta property="og:image" content="https://wdps.russl.dev/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="wdps — tools for the club's digital competitions">
+  <meta property="og:image:alt" content="wdps — photographic tools">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="wdps">
   <meta name="twitter:image" content="https://wdps.russl.dev/og-image.png">
@@ -24,17 +24,17 @@
 <body>
   <div class="page">
     <header class="suite-header">
-      <div>
-        <pre class="name" aria-hidden="true" style="--banner-cols: 13;"> █ ▄ █ █▀▄ █▀█ ▄▀▀
+      <pre class="name" aria-hidden="true" style="--banner-cols: 13;"> █ ▄ █ █▀▄ █▀█ ▄▀▀
  █▀ ▀█ █▄▀ █▀▀ ▄██</pre>
-        <h1 class="visually-hidden">wdps</h1>
-        <p class="tagline dim">tools for the club's digital competitions<span class="cursor" aria-hidden="true">█</span></p>
+      <h1 class="visually-hidden">wdps</h1>
+      <div class="head-row">
+        <p class="tagline dim">photographic tools<span class="cursor" aria-hidden="true">█</span></p>
+        <nav class="bracket-nav" aria-label="theme">
+          <button id="theme-toggle" type="button" aria-label="toggle light/dark theme">
+            <span class="key" aria-hidden="true">[t]</span> <span class="mode">light</span>
+          </button>
+        </nav>
       </div>
-      <nav class="bracket-nav" aria-label="theme">
-        <button id="theme-toggle" type="button" aria-label="toggle light/dark theme">
-          <span class="key" aria-hidden="true">[t]</span> <span class="mode">light</span>
-        </button>
-      </nav>
     </header>
 
     <section class="panel">
@@ -46,6 +46,25 @@
         </div>
       </nav>
     </section>
+
+    <footer class="suite-footer">
+      <div class="social">
+        <a href="https://github.com/abueelo/wdps-suite" aria-label="GitHub — github.com/abueelo/wdps-suite">
+          <pre aria-hidden="true">
+    ▄▄██████▄▄
+  ▄████████████▄
+ ███  ▀▀▀▀▀▀  ███
+████          ████
+███            ███
+████          ████
+▀██▀█▄▄    ▄▄████▀
+  ██ ▀▀    █████
+   ▀▀██    ██▀▀</pre>
+          <span class="social-label" aria-hidden="true">github</span>
+        </a>
+      </div>
+      <p><span aria-hidden="true">☼ </span>wdps · <span id="year"></span><span aria-hidden="true"> ☼</span></p>
+    </footer>
   </div>
 
   <script type="module" src="/src/main.ts"></script>
