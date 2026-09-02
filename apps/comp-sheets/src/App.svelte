@@ -36,8 +36,10 @@
 <div class="page">
   <header class="suite-header">
     <div>
-      <p class="wordmark">comp-sheets<span class="cursor" aria-hidden="true">_</span></p>
-      <p class="tagline dim">rename &amp; export competition entries, entirely in your browser</p>
+      <pre class="name" aria-hidden="true" style="--banner-cols: 30;"> █▀▀ █▀█ █▄ ▄█ █▀█  ▄▀▀ █ █ █▀▀ █▀▀ ▀█▀ ▄▀▀
+ █▄▄ █▄█ █ ▀ █ █▀▀  ▄██ █▀█ ██▄ ██▄  █  ▄██</pre>
+      <h1 class="visually-hidden">comp-sheets</h1>
+      <p class="tagline dim">rename &amp; export competition entries, entirely in your browser<span class="cursor" aria-hidden="true">█</span></p>
     </div>
     <nav class="bracket-nav" aria-label="theme and suite">
       <a href="/"><span class="key" aria-hidden="true">[h]</span> wdps</a>
@@ -72,19 +74,8 @@
 </div>
 
 <style>
-  .wordmark {
-    font-size: 1.3rem;
-    letter-spacing: 0.1em;
-  }
-  .wordmark .cursor {
-    color: var(--amber);
-    animation: blink 1.2s steps(1) infinite;
-  }
-  @keyframes blink {
-    50% { opacity: 0; }
-  }
   .tagline {
-    margin-top: 0.35rem;
+    margin-top: 0.75rem;
   }
   .step-nav button.current {
     color: var(--amber);

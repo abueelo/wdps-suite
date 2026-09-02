@@ -1,20 +1,5 @@
-.wordmark {
-  font-size: 1.4rem;
-  letter-spacing: 0.15em;
-  color: var(--fg);
-}
-
-.wordmark .cursor {
-  color: var(--amber);
-  animation: blink 1.2s steps(1) infinite;
-}
-
-@keyframes blink {
-  50% { opacity: 0; }
-}
-
 .tagline {
-  margin-top: 0.35rem;
+  margin-top: 0.75rem;
 }
 
 .app-list {

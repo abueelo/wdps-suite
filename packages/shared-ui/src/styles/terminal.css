@@ -24,9 +24,9 @@ body {
 }
 
 .page {
-  max-width: 80ch;
+  max-width: min(1400px, 94vw);
   margin: 0 auto;
-  padding: 3rem 1.5rem 4rem;
+  padding: 3rem clamp(1rem, 4vw, 3rem) 4rem;
 }
 
 ::selection {
@@ -53,6 +53,28 @@ a:focus-visible {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* ascii wordmark banner + blinking cursor, matching russl.dev's header.
+   --banner-cols should be set (inline style) to the banner's widest row
+   length, so the font scales down to fit narrow viewports without
+   wrapping or overflowing — same trick the source site uses. */
+
+.name {
+  color: var(--fg);
+  font-size: min(1rem, calc((100vw - 3rem) / var(--banner-cols, 30)));
+  line-height: 1.25;
+  user-select: none;
+}
+
+.cursor {
+  color: var(--amber);
+  margin-left: 0.5ch;
+  animation: blink 1.2s steps(1) infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
 }
 
 /* header / nav, matching russl.dev's [key] label pattern */
@@ -190,6 +212,11 @@ input[type="number"]:focus,
 select:focus {
   outline: none;
   border-color: var(--amber);
+}
+
+input::placeholder {
+  color: var(--dim);
+  opacity: 1;
 }
 
 input[type="checkbox"] {

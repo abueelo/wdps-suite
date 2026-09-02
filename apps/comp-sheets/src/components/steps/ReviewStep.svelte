@@ -1,9 +1,31 @@
 <script lang="ts">
   import { imagesStore } from '../../lib/state/images.svelte.js';
   import { findLikelyMatch } from '../../lib/parsing/nameMatcher.js';
+  import { generatePreviewUrl } from '../../lib/upload/preview.js';
   import type { ImageRecord } from '../../lib/types.js';
 
   let { onNext, onBack }: { onNext: () => void; onBack: () => void } = $props();
+
+  // Memoized per-record preview promises — {#await} re-evaluates on every
+  // render, so without this cache each keystroke would kick off a fresh
+  // decode of every row's image.
+  const previewCache = new Map<string, Promise<string>>();
+  function previewFor(record: ImageRecord): Promise<string> {
+    let promise = previewCache.get(record.id);
+    if (!promise) {
+      promise = generatePreviewUrl(record.originalFile);
+      previewCache.set(record.id, promise);
+    }
+    return promise;
+  }
+
+  $effect(() => {
+    return () => {
+      for (const promise of previewCache.values()) {
+        promise.then((url) => URL.revokeObjectURL(url)).catch(() => {});
+      }
+    };
+  });
 
   let confirmedNames = $derived(
     [...new Set(imagesStore.all.map((r) => r.photographer).filter(Boolean))].sort()
@@ -63,24 +85,38 @@
         {#each imagesStore.all as record (record.id)}
           {@const suggestion = suggestionFor(record)}
           <tr>
-            <td class="dim filename">{record.originalName}</td>
+            <td class="filename">
+              <div class="thumb-wrap">
+                {#await previewFor(record)}
+                  <div class="thumb-placeholder"></div>
+                {:then url}
+                  <img class="thumb" src={url} alt="" />
+                {:catch}
+                  <div class="thumb-placeholder">?</div>
+                {/await}
+              </div>
+              <div class="dim filename-text">{record.originalName}</div>
+            </td>
             <td>
-              <input
-                type="text"
-                list="photographer-names"
-                value={record.photographer}
-                oninput={(e) => updatePhotographer(record, (e.currentTarget as HTMLInputElement).value)}
-                placeholder="photographer name"
-              />
-              {#if suggestion}
-                <div class="hint">
-                  did you mean <button class="link-btn" onclick={() => applySuggestion(record, suggestion)}>{suggestion}</button>?
-                </div>
-              {/if}
+              <div class="input-wrap">
+                <input
+                  type="text"
+                  autocomplete="off"
+                  value={record.photographer}
+                  oninput={(e) => updatePhotographer(record, (e.currentTarget as HTMLInputElement).value)}
+                  placeholder="photographer name"
+                />
+                {#if suggestion}
+                  <div class="hint">
+                    did you mean <button class="link-btn" onclick={() => applySuggestion(record, suggestion)}>{suggestion}</button>?
+                  </div>
+                {/if}
+              </div>
             </td>
             <td>
               <input
                 type="text"
+                autocomplete="off"
                 value={record.title}
                 oninput={(e) => updateTitle(record, (e.currentTarget as HTMLInputElement).value)}
                 placeholder="image title"
@@ -93,10 +129,6 @@
       </tbody>
     </table>
   </div>
-
-  <datalist id="photographer-names">
-    {#each confirmedNames as name}<option value={name}></option>{/each}
-  </datalist>
 
   {#if !allConfirmed}
     <p class="warn">every image needs a photographer name and a title before you can continue.</p>
@@ -117,14 +149,45 @@
     width: 100%;
   }
   .filename {
-    max-width: 22ch;
+    max-width: 12ch;
+  }
+  .thumb-wrap {
+    width: 56px;
+    height: 56px;
+  }
+  .thumb {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border: 1px solid var(--border);
+    display: block;
+  }
+  .thumb-placeholder {
+    width: 56px;
+    height: 56px;
+    border: 1px dashed var(--border);
+  }
+  .filename-text {
+    margin-top: 0.4em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .input-wrap {
+    position: relative;
+  }
   .hint {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 0.3em;
+    padding: 0.2em 0.4em;
     font-size: 0.85em;
-    margin-top: 0.2em;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    z-index: 1;
+    white-space: nowrap;
   }
   .link-btn {
     font: inherit;
