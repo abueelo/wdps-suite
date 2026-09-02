@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>wdps</title>
+  <meta name="description" content="wdps — tools for the club's digital competitions." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text x='8' y='13' font-family='Menlo, Consolas, monospace' font-size='11' text-anchor='middle' fill='%23c9a25e'>w</text></svg>" />
+  <script>
+    document.documentElement.dataset.theme = localStorage.getItem('wdps-theme') || 'dark';
+  </script>
+</head>
+<body>
+  <div class="page">
+    <header class="suite-header">
+      <div>
+        <p class="wordmark">wdps<span class="cursor" aria-hidden="true">_</span></p>
+        <p class="tagline dim">tools for the club's digital competitions</p>
+      </div>
+      <nav class="bracket-nav" aria-label="theme">
+        <button id="theme-toggle" type="button" aria-label="toggle light/dark theme">
+          <span class="key" aria-hidden="true">[t]</span> <span class="mode">light</span>
+        </button>
+      </nav>
+    </header>
+
+    <section class="panel">
+      <h2><span class="bracket" aria-hidden="true">[ </span>apps<span class="bracket" aria-hidden="true"> ]</span></h2>
+      <nav class="bracket-nav app-list" aria-label="apps">
+        <a href="/comp-sheets/"><span class="key" aria-hidden="true">[c]</span> comp-sheets <span class="dim">— rename, resize &amp; score-sheet exports for competition entries</span></a>
+      </nav>
+    </section>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

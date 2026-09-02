@@ -1,0 +1,32 @@
+.wordmark {
+  font-size: 1.4rem;
+  letter-spacing: 0.15em;
+  color: var(--fg);
+}
+
+.wordmark .cursor {
+  color: var(--amber);
+  animation: blink 1.2s steps(1) infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+.tagline {
+  margin-top: 0.35rem;
+}
+
+.app-list {
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.app-list a {
+  color: var(--fg);
+}
+
+.app-list a:hover,
+.app-list a:focus-visible {
+  color: var(--amber);
+}

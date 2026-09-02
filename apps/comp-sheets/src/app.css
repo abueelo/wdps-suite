@@ -1,0 +1,5 @@
+/* App-specific tweaks beyond the shared terminal design system. */
+
+.step-nav {
+  margin-top: 1rem;
+}

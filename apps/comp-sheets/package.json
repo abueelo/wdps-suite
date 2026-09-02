@@ -1,0 +1,29 @@
+{
+  "name": "@wdps/comp-sheets",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@wdps/shared-ui": "*",
+    "@wdps/shared-bus": "*",
+    "comlink": "^4.4.2",
+    "docx": "^9.1.1",
+    "fflate": "^0.8.2",
+    "piexifjs": "^1.0.6",
+    "utif2": "^4.1.0"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^4.0.0",
+    "@tsconfig/svelte": "^5.0.4",
+    "svelte": "^5.1.9",
+    "svelte-check": "^4.0.5",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  }
+}
