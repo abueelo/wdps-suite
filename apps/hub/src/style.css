@@ -1,3 +1,11 @@
+/* The hub is a short, sparse landing page — the shared .page width
+   (tuned for comp-sheets' tables/forms) leaves it looking adrift in a
+   sea of empty space, so it gets its own narrower, more proportionate
+   column instead. */
+.page {
+  max-width: min(760px, 92vw);
+}
+
 .tagline {
   margin-top: 0.75rem;
 }
