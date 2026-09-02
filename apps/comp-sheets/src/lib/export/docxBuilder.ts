@@ -32,7 +32,7 @@ const NOTES_BLANK_LINES = 3;
 // to exactly 100% of the page width; cells need an explicit width or
 // Word auto-fits columns to their header text instead of stretching the
 // table to fill the page.
-const SCORER_WIDTHS = { entry: 8, thumb: 15, photographer: 22, score: 12 };
+const SCORER_WIDTHS = { entry: 6, thumb: 15, photographer: 22, score: 8 };
 const JUDGE_WIDTHS = { entry: 6, thumb: 15, score: 8, notes: 50 };
 
 function cellWidth(percent: number) {

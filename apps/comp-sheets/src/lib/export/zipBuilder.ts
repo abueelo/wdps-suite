@@ -6,8 +6,6 @@ export interface ZipInputs {
   processed: Map<string, ProcessedImage>;
   scorerDocBytes: Uint8Array;
   judgeDocBytes: Uint8Array;
-  scorerPdfBytes: Uint8Array;
-  judgePdfBytes: Uint8Array;
   competitionName: string;
 }
 
@@ -18,7 +16,7 @@ export interface ZipInputs {
  * bytes are referenced into both folders without re-encoding.
  */
 export function streamExportZip(inputs: ZipInputs, onChunk: (chunk: Uint8Array) => void): Promise<void> {
-  const { entries, processed, scorerDocBytes, judgeDocBytes, scorerPdfBytes, judgePdfBytes, competitionName } = inputs;
+  const { entries, processed, scorerDocBytes, judgeDocBytes, competitionName } = inputs;
 
   return new Promise((resolve, reject) => {
     const zip = new Zip((err, chunk, final) => {
@@ -50,14 +48,6 @@ export function streamExportZip(inputs: ZipInputs, onChunk: (chunk: Uint8Array) 
     const judgeDoc = new ZipDeflate(`judge/${competitionName}-judge-sheet.docx`, { level: 6 });
     zip.add(judgeDoc);
     judgeDoc.push(judgeDocBytes, true);
-
-    const scorerPdf = new ZipDeflate(`scorer/${competitionName}-scorer-sheet.pdf`, { level: 6 });
-    zip.add(scorerPdf);
-    scorerPdf.push(scorerPdfBytes, true);
-
-    const judgePdf = new ZipDeflate(`judge/${competitionName}-judge-sheet.pdf`, { level: 6 });
-    zip.add(judgePdf);
-    judgePdf.push(judgePdfBytes, true);
 
     zip.end();
   });

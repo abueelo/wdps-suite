@@ -7,7 +7,6 @@
   import { buildCompetitionOrder } from '../../lib/order/competitionOrder.js';
   import { processJobs } from '../../lib/processing/workerPool.js';
   import { buildScorerDoc, buildJudgeDoc } from '../../lib/export/docxBuilder.js';
-  import { buildScorerPdf, buildJudgePdf } from '../../lib/export/pdfBuilder.js';
   import { streamExportZip } from '../../lib/export/zipBuilder.js';
   import { saveStreamedFile } from '../../lib/export/download.js';
   import { putPayload, compatibleApps, IMAGE_SET_TYPE } from '@wdps/shared-bus';
@@ -95,11 +94,9 @@
 
     statusMessage = 'building score sheets…';
     const docOpts = { competitionName, includeThumbnails: settingsStore.value.includeThumbnails, thumbnails };
-    const [scorerDocBlob, judgeDocBlob, scorerPdfBytes, judgePdfBytes] = await Promise.all([
+    const [scorerDocBlob, judgeDocBlob] = await Promise.all([
       buildScorerDoc(usableOrder, docOpts),
-      buildJudgeDoc(usableOrder, docOpts),
-      buildScorerPdf(usableOrder, docOpts),
-      buildJudgePdf(usableOrder, docOpts)
+      buildJudgeDoc(usableOrder, docOpts)
     ]);
     const [scorerDocBytes, judgeDocBytes] = await Promise.all([
       scorerDocBlob.arrayBuffer().then((b) => new Uint8Array(b)),
@@ -110,7 +107,7 @@
     progressStore.setZipStage('building');
     const outcome = await saveStreamedFile(`${competitionName}.zip`, 'application/zip', (onChunk) =>
       streamExportZip(
-        { entries: usableOrder, processed, scorerDocBytes, judgeDocBytes, scorerPdfBytes, judgePdfBytes, competitionName },
+        { entries: usableOrder, processed, scorerDocBytes, judgeDocBytes, competitionName },
         onChunk
       )
     );
