@@ -123,7 +123,7 @@
               />
             </td>
             <td class={confidenceLabel[record.confidence]}>{record.confidence}</td>
-            <td><button class="link-btn danger" onclick={() => removeRecord(record.id)}>remove</button></td>
+            <td><button class="link-btn danger remove-btn" onclick={() => removeRecord(record.id)} aria-label="remove image">×</button></td>
           </tr>
         {/each}
       </tbody>
@@ -148,27 +148,25 @@
   table.data input[type='text'] {
     width: 100%;
   }
-  .filename {
-    max-width: 12ch;
-  }
   .thumb-wrap {
-    width: 56px;
-    height: 56px;
+    height: 128px;
   }
   .thumb {
-    width: 56px;
-    height: 56px;
-    object-fit: cover;
+    height: 128px;
+    width: auto;
+    max-width: 220px;
+    object-fit: contain;
     border: 1px solid var(--border);
     display: block;
   }
   .thumb-placeholder {
-    width: 56px;
-    height: 56px;
+    width: 96px;
+    height: 128px;
     border: 1px dashed var(--border);
   }
   .filename-text {
     margin-top: 0.4em;
+    max-width: 220px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -182,10 +180,7 @@
     left: 0;
     right: 0;
     margin-top: 0.3em;
-    padding: 0.2em 0.4em;
     font-size: 0.85em;
-    background: var(--bg);
-    border: 1px solid var(--border);
     z-index: 1;
     white-space: nowrap;
   }
@@ -202,6 +197,13 @@
   }
   .link-btn.danger {
     color: var(--danger);
+  }
+  .remove-btn {
+    font-size: 1.2em;
+    line-height: 1;
+  }
+  .link-btn.remove-btn:hover {
+    text-decoration: none;
   }
   .nav-row {
     display: flex;
