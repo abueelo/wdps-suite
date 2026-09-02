@@ -101,7 +101,7 @@
               <div class="input-wrap">
                 <input
                   type="text"
-                  autocomplete="off"
+                  autocomplete={"do-not-autofill" as any}
                   value={record.photographer}
                   oninput={(e) => updatePhotographer(record, (e.currentTarget as HTMLInputElement).value)}
                   placeholder="photographer name"
@@ -116,7 +116,7 @@
             <td>
               <input
                 type="text"
-                autocomplete="off"
+                autocomplete={"do-not-autofill" as any}
                 value={record.title}
                 oninput={(e) => updateTitle(record, (e.currentTarget as HTMLInputElement).value)}
                 placeholder="image title"

@@ -141,7 +141,7 @@
     <input
       id="competition-name"
       type="text"
-      autocomplete="off"
+      autocomplete={"do-not-autofill" as any}
       value={competitionName}
       oninput={(e) => (competitionName = (e.currentTarget as HTMLInputElement).value)}
     />
