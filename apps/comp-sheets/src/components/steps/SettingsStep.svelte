@@ -66,6 +66,7 @@
       id="limit"
       type="number"
       min="1"
+      autocomplete="off"
       value={settingsStore.value.limit}
       oninput={(e) => settingsStore.update({ limit: Number((e.currentTarget as HTMLInputElement).value) || 0 })}
     />
