@@ -17,9 +17,20 @@
   });
 
   function buildRecords(files: File[]): ImageRecord[] {
+    // First pass: names that parse unambiguously become "known authors" so a
+    // second, ambiguous filename elsewhere in the batch (e.g. one where the
+    // photographer's own name is split across underscores) can be matched
+    // against a real name instead of guessed at in isolation.
+    const knownAuthors = new Set(
+      files
+        .map((file) => parseFilename(file.name))
+        .filter((p) => p.confidence === 'ok' && p.photographer)
+        .map((p) => p.photographer.toLowerCase())
+    );
+
     const perPhotographerCount = new Map<string, number>();
     return files.map((file) => {
-      const parsed = parseFilename(file.name);
+      const parsed = parseFilename(file.name, knownAuthors);
       const count = perPhotographerCount.get(parsed.photographer) ?? 0;
       perPhotographerCount.set(parsed.photographer, count + 1);
       return {

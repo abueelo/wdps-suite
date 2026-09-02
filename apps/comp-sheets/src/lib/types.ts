@@ -1,4 +1,4 @@
-export type Confidence = 'high' | 'medium' | 'low';
+export type Confidence = 'ok' | 'attention';
 
 export interface ImageRecord {
   id: string;
