@@ -1,0 +1,20 @@
+{
+  "name": "@wdps/shared-ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "svelte": "./src/index.ts",
+  "exports": {
+    ".": {
+      "svelte": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./theme": "./src/theme.ts",
+    "./shortcuts": "./src/shortcuts.ts",
+    "./styles/*": "./src/styles/*"
+  },
+  "peerDependencies": {
+    "svelte": "^5.0.0"
+  }
+}

@@ -1,0 +1,42 @@
+/* Design tokens ported from russl.dev, plus a small set of additions
+   (--danger, --ok, --warn) this suite needs that the source site doesn't
+   have (score/status states). Additions use the same muted, desaturated
+   palette logic as the rest of the tokens rather than stock red/green. */
+
+:root {
+  --bg:     #1b1b18;
+  --fg:     #b8b5a9;
+  --dim:    #6e6b60;
+  --border: #3a3a34;
+  --amber:  #c9a25e;
+  --cyan:   #7a9e9f;
+  --border-hover: #54524a;
+  --overlay: rgba(27, 27, 24, 0.75);
+
+  --danger: #b06a5a;
+  --ok:     #7a9e7f;
+  --warn:   var(--amber);
+}
+
+:root[data-theme="light"] {
+  --bg:     #e6dcc4;
+  --fg:     #4a4436;
+  --dim:    #8c8168;
+  --border: #c2b493;
+  --border-hover: #a3946e;
+  --amber:  #8a6420;
+  --cyan:   #46707a;
+  --overlay: rgba(230, 220, 196, 0.75);
+
+  --danger: #93493a;
+  --ok:     #4c6e50;
+  --warn:   var(--amber);
+}
+
+/* Theme is set explicitly via data-theme on <html> (see theme.ts), same
+   approach as russl.dev — defaults to dark, no prefers-color-scheme
+   dependency, so it stays consistent with the rest of the suite. */
+
+:root {
+  --font-mono: ui-monospace, "Cascadia Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}

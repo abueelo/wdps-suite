@@ -1,0 +1,32 @@
+/* The hub is a short, sparse landing page — the shared .page width
+   (tuned for comp-sheets' tables/forms) leaves it looking adrift in a
+   sea of empty space, so it gets its own narrower, more proportionate
+   column instead. */
+.page {
+  max-width: min(760px, 92vw);
+}
+
+.tagline {
+  margin-top: 0.75rem;
+}
+
+.app-list {
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.app-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.75ch;
+}
+
+.app-list a {
+  color: var(--fg);
+}
+
+.app-list a:hover,
+.app-list a:focus-visible {
+  color: var(--amber);
+}

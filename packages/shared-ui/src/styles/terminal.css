@@ -1,0 +1,390 @@
+/* Base reset + typography, ported from russl.dev, plus new component
+   styles (buttons, tables, forms, progress bar) built in the same
+   visual language: monospace, no font-size hierarchy, bordered sections
+   with a floating bracket-legend heading, amber/cyan accents. */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  transition: background-color 0.25s ease;
+}
+
+body {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--fg);
+  background: var(--bg);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.page {
+  max-width: min(1400px, 94vw);
+  margin: 0 auto;
+  padding: 3rem clamp(1rem, 4vw, 3rem) 4rem;
+}
+
+::selection {
+  background: var(--amber);
+  color: var(--bg);
+}
+
+a {
+  color: var(--amber);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+a:hover,
+a:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ascii wordmark banner + blinking cursor, matching russl.dev's header.
+   --banner-cols should be set (inline style) to the banner's widest row
+   length, so the font scales down to fit narrow viewports without
+   wrapping or overflowing — same trick the source site uses. */
+
+.name {
+  color: var(--fg);
+  font-size: min(1rem, calc((100vw - 3rem) / var(--banner-cols, 30)));
+  line-height: 1.25;
+  user-select: none;
+}
+
+.cursor {
+  color: var(--amber);
+  margin-left: 0.5ch;
+  animation: blink 1.2s steps(1) infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* header / nav, matching russl.dev's [key] label pattern.
+   The banner sits full-width at the top of the header; .head-row is the
+   tagline + nav sitting together on the row below it, exactly like the
+   source site's own <div class="head-row">. */
+
+header.suite-header {
+  margin-bottom: 1rem;
+}
+
+.head-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem 4ch;
+  margin-top: 1rem;
+}
+
+nav.bracket-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2ch;
+}
+
+nav.bracket-nav a,
+nav.bracket-nav button {
+  color: var(--fg);
+}
+
+nav.bracket-nav a:hover,
+nav.bracket-nav a:focus-visible,
+nav.bracket-nav button:hover,
+nav.bracket-nav button:focus-visible {
+  color: var(--amber);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.key {
+  color: var(--cyan);
+}
+
+.bracket-nav button,
+#theme-toggle {
+  font: inherit;
+  color: var(--fg);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* bordered sections with a floating [ heading ] legend */
+
+section.panel {
+  position: relative;
+  border: 1px solid var(--border);
+  padding: 1.5rem 1.75rem 1.25rem;
+  margin-top: 2.75rem;
+  transition: border-color 0.25s ease;
+}
+
+section.panel:first-of-type {
+  margin-top: 1.5rem;
+}
+
+section.panel:hover {
+  border-color: var(--border-hover);
+}
+
+section.panel > h2 {
+  position: absolute;
+  top: -0.85em;
+  left: 1.25ch;
+  background: var(--bg);
+  padding: 0 1ch;
+  font-size: 1rem;
+  font-weight: normal;
+  color: var(--fg);
+  letter-spacing: 0.05em;
+}
+
+section.panel > h2 .bracket {
+  color: var(--dim);
+}
+
+.dim { color: var(--dim); }
+.danger { color: var(--danger); }
+.ok { color: var(--ok); }
+.warn { color: var(--warn); }
+
+/* buttons */
+
+.btn {
+  font: inherit;
+  color: var(--fg);
+  background: none;
+  border: 1px solid var(--border);
+  padding: 0.4em 1.1em;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn:hover,
+.btn:focus-visible {
+  border-color: var(--border-hover);
+  color: var(--amber);
+}
+
+.btn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn.primary {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.btn.primary:hover,
+.btn.primary:focus-visible {
+  background: var(--amber);
+  color: var(--bg);
+}
+
+/* form controls */
+
+input[type="text"],
+input[type="number"],
+select {
+  font: inherit;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 0.35em 0.6em;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus {
+  outline: none;
+  border-color: var(--amber);
+}
+
+input::placeholder {
+  color: var(--dim);
+  opacity: 1;
+}
+
+/* bordered box checkbox, matching the rest of the site's boxy controls
+   (buttons, text inputs) rather than the OS-native checkbox — bigger and
+   higher-contrast too. */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1.3em;
+  height: 1.3em;
+  margin: 0;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: border-color 0.15s ease;
+}
+
+input[type="checkbox"]:hover {
+  border-color: var(--border-hover);
+}
+
+input[type="checkbox"]:focus-visible {
+  outline: none;
+  border-color: var(--amber);
+}
+
+input[type="checkbox"]:checked {
+  border-color: var(--amber);
+}
+
+input[type="checkbox"]:checked::after {
+  content: "×";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--amber);
+  font-size: 1.15em;
+  line-height: 1;
+}
+
+label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8ch;
+  cursor: pointer;
+}
+
+/* tables (review table, cap preview) */
+
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: inherit;
+}
+
+table.data th,
+table.data td {
+  text-align: left;
+  padding: 0.4em 0.75em 0.4em 0;
+  border-bottom: 1px dotted var(--border);
+  vertical-align: middle;
+}
+
+table.data th {
+  color: var(--dim);
+  font-weight: normal;
+  border-bottom: 1px solid var(--border);
+}
+
+table.data tr.excluded td {
+  color: var(--dim);
+  text-decoration: line-through;
+  text-decoration-color: var(--border-hover);
+}
+
+/* ascii progress bar */
+
+.ascii-progress {
+  display: flex;
+  align-items: baseline;
+  gap: 1ch;
+  font-variant-numeric: tabular-nums;
+}
+
+.ascii-progress .bar {
+  letter-spacing: -0.05em;
+  color: var(--amber);
+}
+
+.ascii-progress .bar .empty {
+  color: var(--border-hover);
+}
+
+.ascii-progress .pct {
+  color: var(--dim);
+  min-width: 4ch;
+  text-align: right;
+}
+
+/* divider */
+
+.divider {
+  color: var(--border-hover);
+  letter-spacing: 0.1em;
+  margin: 1.5rem 0;
+  user-select: none;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* footer, matching russl.dev's own (ascii social icons + a small
+   signature line) */
+
+footer.suite-footer {
+  margin-top: 2.75rem;
+  text-align: center;
+  color: var(--dim);
+  font-size: 0.85rem;
+}
+
+.social {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 4ch;
+  margin-bottom: 1.25rem;
+}
+
+.social a {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  color: var(--dim);
+}
+
+.social a:hover,
+.social a:focus-visible {
+  color: var(--amber);
+  text-decoration: none;
+}
+
+.social pre {
+  font-size: 0.24rem;
+  line-height: 1.2;
+  transition: color 0.2s ease;
+}
+
+.footer-link {
+  color: var(--dim);
+}
+
+.footer-link:hover,
+.footer-link:focus-visible {
+  color: var(--amber);
+}
+
+.social-label {
+  font-size: 0.8rem;
+}

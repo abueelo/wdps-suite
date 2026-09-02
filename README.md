@@ -1,30 +1,44 @@
 # wdps
 
-Tools for the club's digital competitions, hosted at wdps.russl.dev.
+Tools for the club's digital competitions, at [wdps.russl.dev](https://wdps.russl.dev).
+
+![hub](docs/screenshots/hub.jpg)
+
+Everything runs in the browser — upload photos, it renames and resizes them to whatever format the competition needs, and spits out a zip with correctly named images plus judge and scorer score sheets. Nothing gets uploaded anywhere; it's all done client-side with canvas and web workers.
 
 ## apps
 
-- `apps/comp-sheets` — uploads competition entries, renames/resizes them to the required format, and generates judge/scorer score sheets.
-- `apps/hub` — landing page linking out to the apps in the suite.
+- **comp-sheets** — upload a batch of entries, fix up any names it guessed wrong, set a fair per-photographer limit, and export. Judge gets an anonymised set with no photographer names, scorer gets the full thing.
 
-## packages
+More apps can live in here later — see `packages/shared-bus` below.
 
-- `packages/shared-ui` — the shared terminal-style design system (ported from russl.dev).
-- `packages/shared-bus` — lets apps in the suite hand off processed images to each other via IndexedDB.
+![review step](docs/screenshots/review.jpg)
+![settings step](docs/screenshots/settings.jpg)
 
-Everything runs client-side — no backend, nothing is ever uploaded anywhere.
+## how it's put together
 
-## development
+An npm workspaces monorepo:
 
-Requires Node 18.17+.
+- `apps/hub` — the landing page above, plain TS, no framework
+- `apps/comp-sheets` — the actual tool, Svelte 5 + TypeScript
+- `packages/shared-ui` — the terminal look (colours, fonts, buttons, the ascii banners) shared across apps, lifted straight from my [portfolio site](https://russl.dev)
+- `packages/shared-bus` — lets apps in the suite hand images off to each other through IndexedDB, so a second app could pick up where comp-sheets left off
+
+## running it locally
+
+Needs Node 18.17+.
 
 ```
 npm install
-npm run dev:hub          # hub dev server
-npm run dev:comp-sheets  # comp-sheets dev server
+npm run dev:hub          # hub on its own dev server
+npm run dev:comp-sheets  # comp-sheets on its own dev server
 npm run build             # builds everything into dist/
 ```
 
-## deployment
+`npm run build` is what actually matters for testing the real thing — it assembles the hub and comp-sheets into one `dist/` tree the way they'll be served in production (hub at the root, comp-sheets under `/comp-sheets/`), so serve that instead of relying on the separate dev servers if you want to check routing between them.
 
-Cloudflare Pages, connected to the `main` branch. Build command `npm run build`, output directory `dist`. Custom domain `wdps.russl.dev`.
+## deploying
+
+Cloudflare Pages, connected to GitHub. Full steps in [CLOUDFLARE.md](CLOUDFLARE.md).
+
+Work happens on the `test` branch; `main` only gets merges when they're actually ready to go live, since that's what Pages deploys to production from.
