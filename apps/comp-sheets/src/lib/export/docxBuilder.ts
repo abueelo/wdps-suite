@@ -42,12 +42,22 @@ function scoreCell(): TableCell {
   return new TableCell({ children: [new Paragraph('')], width: { size: 12, type: WidthType.PERCENTAGE } });
 }
 
-function buildTable(entries: OrderedEntry[], opts: DocxOptions, includePhotographer: boolean): Table {
+function notesCell(): TableCell {
+  // Blank and wider than the score cell — room for the judge to jot
+  // down comments on each image while scoring.
+  return new TableCell({ children: [new Paragraph('')], width: { size: 25, type: WidthType.PERCENTAGE } });
+}
+
+function buildTable(entries: OrderedEntry[], opts: DocxOptions, variant: 'scorer' | 'judge'): Table {
+  const includePhotographer = variant === 'scorer';
+  const includeNotes = variant === 'judge';
+
   const headers = ['Entry #'];
   if (opts.includeThumbnails) headers.push('Thumbnail');
   headers.push('Image Title');
   if (includePhotographer) headers.push('Photographer');
   headers.push('Score');
+  if (includeNotes) headers.push('Notes');
 
   const headerRow = new TableRow({ children: headers.map(headerCell) });
 
@@ -57,6 +67,7 @@ function buildTable(entries: OrderedEntry[], opts: DocxOptions, includePhotograp
     cells.push(textCell(entry.image.title || '(untitled)'));
     if (includePhotographer) cells.push(textCell(entry.image.photographer));
     cells.push(scoreCell());
+    if (includeNotes) cells.push(notesCell());
     return new TableRow({ children: cells });
   });
 
@@ -70,7 +81,7 @@ function buildDoc(entries: OrderedEntry[], opts: DocxOptions, variant: 'scorer' 
       {
         children: [
           new Paragraph({ text: title, heading: HeadingLevel.HEADING_1 }),
-          buildTable(entries, opts, variant === 'scorer')
+          buildTable(entries, opts, variant)
         ]
       }
     ]

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Divider, ThemeToggle } from '@wdps/shared-ui';
+  import { bindShortcuts } from '@wdps/shared-ui/shortcuts';
   import { imagesStore } from './lib/state/images.svelte.js';
   import UploadStep from './components/steps/UploadStep.svelte';
   import ReviewStep from './components/steps/ReviewStep.svelte';
@@ -19,6 +20,17 @@
   function goTo(id: StepId) {
     step = id;
   }
+
+  $effect(() => {
+    return bindShortcuts({
+      '1': () => goTo(1),
+      '2': () => { if (imagesStore.all.length > 0) goTo(2); },
+      '3': () => { if (imagesStore.all.length > 0) goTo(3); },
+      '4': () => { if (imagesStore.all.length > 0) goTo(4); },
+      t: () => document.getElementById('theme-toggle')?.click(),
+      h: () => { window.location.href = '/'; }
+    });
+  });
 </script>
 
 <div class="page">
@@ -28,7 +40,7 @@
       <p class="tagline dim">rename &amp; export competition entries, entirely in your browser</p>
     </div>
     <nav class="bracket-nav" aria-label="theme and suite">
-      <a href="/">wdps</a>
+      <a href="/"><span class="key" aria-hidden="true">[h]</span> wdps</a>
       <ThemeToggle />
     </nav>
   </header>
