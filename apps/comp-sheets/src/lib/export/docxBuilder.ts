@@ -8,7 +8,6 @@ import {
   TextRun,
   ImageRun,
   WidthType,
-  HeadingLevel,
   TableLayoutType
 } from 'docx';
 import type { OrderedEntry } from '../types.js';
@@ -113,8 +112,15 @@ function buildTable(entries: OrderedEntry[], opts: DocxOptions, variant: 'scorer
   });
 }
 
+// Direct formatting (not a referenced "Heading 1" style, whose look
+// depends on the docx library's built-in style pack and isn't
+// predictable) so the title always renders exactly this way: 16pt bold
+// Calibri, with a blank line before the table.
+const HEADING_SIZE = 32; // half-points = 16pt
+
 function buildDoc(entries: OrderedEntry[], opts: DocxOptions, variant: 'scorer' | 'judge'): Document {
   const title = variant === 'scorer' ? `${opts.competitionName} — Scorer Sheet` : `${opts.competitionName} — Judge Sheet`;
+  const headingRun = { font: DEFAULT_FONT, bold: true, size: HEADING_SIZE };
   return new Document({
     styles: {
       default: {
@@ -124,7 +130,8 @@ function buildDoc(entries: OrderedEntry[], opts: DocxOptions, variant: 'scorer' 
     sections: [
       {
         children: [
-          new Paragraph({ text: title, heading: HeadingLevel.HEADING_1 }),
+          new Paragraph({ children: [new TextRun({ text: title, ...headingRun })] }),
+          new Paragraph({ children: [new TextRun({ text: '', font: DEFAULT_FONT, size: HEADING_SIZE })] }),
           buildTable(entries, opts, variant)
         ]
       }
