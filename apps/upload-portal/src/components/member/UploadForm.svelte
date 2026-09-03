@@ -59,7 +59,7 @@
       const newIds = accepted.map(() => crypto.randomUUID());
       rows = [
         ...rows,
-        ...accepted.map((file, i): Row => ({ id: newIds[i], file, title: guessTitle(file.name), status: 'pending' }))
+        ...accepted.map((file, i): Row => ({ id: newIds[i], file, title: guessTitle(file.name, photographer), status: 'pending' }))
       ];
       // Re-read the just-added rows back out of `rows` rather than closing
       // over the plain objects built above — $state deeply proxies on
@@ -173,13 +173,16 @@
         <li
           class:done={row.status === 'done'}
           class:dragging={dragging === row.id}
-          draggable={editable}
-          ondragstart={() => { dragging = row.id; }}
           ondragover={(e) => e.preventDefault()}
           ondrop={(e) => { e.preventDefault(); if (dragging) reorderRow(dragging, row.id); dragging = null; }}
-          ondragend={() => { dragging = null; }}
         >
-          <span class="drag-handle" aria-hidden="true">≡</span>
+          <span
+            class="drag-handle"
+            aria-hidden="true"
+            draggable={editable}
+            ondragstart={() => { dragging = row.id; }}
+            ondragend={() => { dragging = null; }}
+          >≡</span>
           <div class="thumb-wrap">
             {#if row.thumbnailUrl}
               <img class="thumb" src={row.thumbnailUrl} alt="" />
@@ -216,6 +219,9 @@
 </section>
 
 <style>
+  section.panel {
+    --field-width: 18rem;
+  }
   .back-link {
     margin-top: 0.75rem;
     border-color: transparent;
@@ -228,8 +234,7 @@
     margin-top: 1.25rem;
   }
   .field input {
-    flex: 1;
-    max-width: 18rem;
+    width: var(--field-width);
   }
   .dropzone {
     border: 1px dashed var(--border);
@@ -264,11 +269,9 @@
     align-items: center;
     gap: 1ch;
     flex-wrap: wrap;
-    cursor: grab;
   }
   .row-list li.dragging {
     opacity: 0.4;
-    cursor: grabbing;
   }
   .row-list li.done {
     opacity: 0.6;
@@ -276,6 +279,10 @@
   }
   .drag-handle {
     color: var(--dim);
+    cursor: grab;
+  }
+  .drag-handle:active {
+    cursor: grabbing;
   }
   .thumb-wrap {
     height: 64px;
@@ -304,8 +311,8 @@
     white-space: nowrap;
   }
   .row-list input {
-    flex: 1;
-    min-width: 10rem;
+    width: var(--field-width);
+    flex: none;
   }
   .remove-btn {
     font-size: 1.2em;
