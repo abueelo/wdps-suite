@@ -8,7 +8,8 @@ import {
   TextRun,
   ImageRun,
   WidthType,
-  TableLayoutType
+  TableLayoutType,
+  PageOrientation
 } from 'docx';
 import type { OrderedEntry } from '../types.js';
 
@@ -25,6 +26,14 @@ const THUMB_DISPLAY_HEIGHT = 60;
 // printed sheet, rather than one cramped line.
 const NOTES_BLANK_LINES = 3;
 
+// A4 portrait, in twips (1/1440in) — spelled out explicitly rather than
+// left to the library's default so the width math below has a fixed page
+// to work from.
+const PAGE_WIDTH = 11906;
+const PAGE_HEIGHT = 16838;
+const PAGE_MARGIN = 720; // 0.5in — Word's "Narrow" preset, so the table uses more of the page
+const USABLE_WIDTH = PAGE_WIDTH - PAGE_MARGIN * 2;
+
 // Fixed percentage widths per column type, per variant — the club's own
 // preferred layout (arrived at by hand-adjusting a generated sheet in
 // Word). "Image Title" absorbs whatever's left so every row always sums
@@ -34,8 +43,14 @@ const NOTES_BLANK_LINES = 3;
 const SCORER_WIDTHS = { entry: 6, thumb: 15, photographer: 22, score: 8 };
 const JUDGE_WIDTHS = { entry: 6, thumb: 15, score: 8, notes: 50 };
 
+// Percentages are turned into absolute twips (DXA) against USABLE_WIDTH
+// rather than passed through docx's own WidthType.PERCENTAGE. That type
+// gets written out as e.g. `w:w="6%"` — Word accepts the percent-sign
+// form, but macOS Preview and Pages don't, and silently collapse every
+// column to (near) zero width, squashing the whole table into the top
+// left corner of the page.
 function cellWidth(percent: number) {
-  return { size: percent, type: WidthType.PERCENTAGE };
+  return { size: Math.round((USABLE_WIDTH * percent) / 100), type: WidthType.DXA };
 }
 
 function headerCell(text: string, width: number): TableCell {
@@ -79,12 +94,25 @@ function buildTable(entries: OrderedEntry[], opts: DocxOptions, variant: 'scorer
   const includePhotographer = variant === 'scorer';
   const includeNotes = variant === 'judge';
   const widths = variant === 'scorer' ? SCORER_WIDTHS : JUDGE_WIDTHS;
-  const entryLabel = variant === 'scorer' ? 'Entry #' : 'No.';
+  const entryLabel = 'No.';
 
   let titleWidth = 100 - widths.entry - widths.score;
   if (opts.includeThumbnails) titleWidth -= widths.thumb;
   if (includePhotographer) titleWidth -= (widths as typeof SCORER_WIDTHS).photographer;
   if (includeNotes) titleWidth -= (widths as typeof JUDGE_WIDTHS).notes;
+
+  // Column percentages in cell order — also used below to fill in the
+  // table's grid, which is what determines column widths under a fixed
+  // layout. The per-cell widths set via cellWidth() are a fallback Word
+  // is happy to ignore in favour of the grid, but Preview and Pages take
+  // them literally, so without a matching grid they render every column
+  // at the tiny placeholder width docx defaults the grid to.
+  const colPercents = [widths.entry];
+  if (opts.includeThumbnails) colPercents.push(widths.thumb);
+  colPercents.push(titleWidth);
+  if (includePhotographer) colPercents.push((widths as typeof SCORER_WIDTHS).photographer);
+  colPercents.push(widths.score);
+  if (includeNotes) colPercents.push((widths as typeof JUDGE_WIDTHS).notes);
 
   const headerCells = [headerCell(entryLabel, widths.entry)];
   if (opts.includeThumbnails) headerCells.push(headerCell('Thumbnail', widths.thumb));
@@ -107,6 +135,7 @@ function buildTable(entries: OrderedEntry[], opts: DocxOptions, variant: 'scorer
 
   return new Table({
     width: cellWidth(100),
+    columnWidths: colPercents.map((percent) => cellWidth(percent).size),
     layout: TableLayoutType.FIXED,
     rows: [headerRow, ...rows]
   });
@@ -129,6 +158,12 @@ function buildDoc(entries: OrderedEntry[], opts: DocxOptions, variant: 'scorer' 
     },
     sections: [
       {
+        properties: {
+          page: {
+            size: { width: PAGE_WIDTH, height: PAGE_HEIGHT, orientation: PageOrientation.PORTRAIT },
+            margin: { top: PAGE_MARGIN, bottom: PAGE_MARGIN, left: PAGE_MARGIN, right: PAGE_MARGIN }
+          }
+        },
         children: [
           new Paragraph({ children: [new TextRun({ text: title, ...headingRun })] }),
           new Paragraph({ children: [new TextRun({ text: '', font: DEFAULT_FONT, size: HEADING_SIZE })] }),
