@@ -34,7 +34,7 @@ Unlike a classic Pages project, the bindings for these live in `wrangler.jsonc`,
 
 1. **KV**: dashboard → **Storage & Databases** → **KV** → create a namespace. If you name it anything other than `wdps-upload-portal`, update the `id` under `kv_namespaces` in `wrangler.jsonc` to match (`npx wrangler kv namespace list` prints the id).
 2. **R2**: dashboard → **R2** → create a bucket named `wdps-upload-portal-images` (or update `bucket_name` under `r2_buckets` in `wrangler.jsonc` to whatever you called it).
-3. **Secrets**: dashboard → the project → **Settings** → **Variables and secrets** (or `npx wrangler secret put <NAME>` from a terminal logged in via `wrangler login`), add these as secrets:
+3. **Secrets**: these are runtime secrets, not build ones — the Worker reads them off `env` while handling a request, long after any build step has finished. dashboard → the project → **Settings** → top-level **Variables and secrets** (the *first* item in that left sidebar, not the one under the **Builds** section further down — that one only holds build-time stuff like `NODE_VERSION`, from step 1.4, and a Worker never sees it). Or skip the dashboard entirely: `npx wrangler secret put <NAME>` from a terminal logged in via `wrangler login`. Add these:
    - `SESSION_SECRET` — any long random string (`openssl rand -hex 32`)
    - `ADMIN_PASSCODE` — the passcode whoever's running the competition uses to get into `/upload-portal/admin.html`
    - `MEMBER_PASSCODE` — not enforced yet (the member gate defaults off, flip it on from the admin settings panel once this is set)
