@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ThemeToggle } from '@wdps/shared-ui';
+  import { bindShortcuts } from '@wdps/shared-ui/shortcuts';
   import { ownerMe, ownerLogout } from './lib/api/client.js';
   import PasscodeResetForm from './components/owner/PasscodeResetForm.svelte';
   import WipePanel from './components/owner/WipePanel.svelte';
@@ -26,6 +27,15 @@
     await ownerLogout();
     authed = false;
   }
+
+  $effect(() => {
+    return bindShortcuts({
+      t: () => document.getElementById('theme-toggle')?.click(),
+      h: () => { window.location.href = '/'; },
+      u: () => { window.location.href = '/upload-portal/'; },
+      x: () => { if (authed) logout(); }
+    });
+  });
 </script>
 
 <div class="page">
@@ -34,6 +44,8 @@
     <div class="head-row">
       <p class="tagline dim">credentials, storage, activity log<span class="cursor" aria-hidden="true">█</span></p>
       <nav class="bracket-nav" aria-label="theme and account">
+        <a href="/"><span class="key" aria-hidden="true">[h]</span> wdps</a>
+        <a href="/upload-portal/"><span class="key" aria-hidden="true">[u]</span> upload</a>
         {#if authed}
           <button type="button" onclick={logout}><span class="key" aria-hidden="true">[x]</span> log out</button>
         {/if}

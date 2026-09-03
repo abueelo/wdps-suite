@@ -35,6 +35,7 @@ export const listAllCompetitions = () => request<Competition[]>('/api/competitio
 export const createCompetition = (name: string) => postJson<Competition>('/api/competitions', { name });
 export const getCompetition = (id: string) => request<Competition>(`/api/competition/${id}`);
 export const lockCompetition = (id: string) => patchJson<Competition>(`/api/competition/${id}`, { status: 'locked' });
+export const reopenCompetition = (id: string) => patchJson<Competition>(`/api/competition/${id}`, { status: 'open' });
 export const renameCompetition = (id: string, name: string) => patchJson<Competition>(`/api/competition/${id}`, { name });
 export const deleteCompetition = (id: string) => request<{ ok: true }>(`/api/competition/${id}`, { method: 'DELETE' });
 

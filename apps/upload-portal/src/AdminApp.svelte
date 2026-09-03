@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ThemeToggle } from '@wdps/shared-ui';
+  import { bindShortcuts } from '@wdps/shared-ui/shortcuts';
   import { adminMe, adminLogin, adminLogout, listAllCompetitions } from './lib/api/client.js';
   import type { Competition } from './lib/types.js';
   import PasscodeGate from './components/PasscodeGate.svelte';
@@ -37,6 +38,16 @@
     authed = false;
     openId = null;
   }
+
+  $effect(() => {
+    return bindShortcuts({
+      t: () => document.getElementById('theme-toggle')?.click(),
+      h: () => { window.location.href = '/'; },
+      u: () => { window.location.href = '/upload-portal/'; },
+      s: () => { if (authed) showSettings = !showSettings; },
+      x: () => { if (authed) logout(); }
+    });
+  });
 </script>
 
 <div class="page">
@@ -45,6 +56,8 @@
     <div class="head-row">
       <p class="tagline dim">review entries, manage competitions<span class="cursor" aria-hidden="true">█</span></p>
       <nav class="bracket-nav" aria-label="theme and account">
+        <a href="/"><span class="key" aria-hidden="true">[h]</span> wdps</a>
+        <a href="/upload-portal/"><span class="key" aria-hidden="true">[u]</span> upload</a>
         {#if authed}
           <button type="button" onclick={() => (showSettings = !showSettings)}>
             <span class="key" aria-hidden="true">[s]</span> settings

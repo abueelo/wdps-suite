@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ThemeToggle } from '@wdps/shared-ui';
+  import { bindShortcuts } from '@wdps/shared-ui/shortcuts';
   import { getSettings, listOpenCompetitions, memberLogin } from './lib/api/client.js';
   import type { Competition } from './lib/types.js';
   import PasscodeGate from './components/PasscodeGate.svelte';
@@ -37,6 +38,14 @@
     localStorage.setItem(GATE_PASSED_KEY, '1');
     competitions = await listOpenCompetitions();
   }
+
+  $effect(() => {
+    return bindShortcuts({
+      t: () => document.getElementById('theme-toggle')?.click(),
+      a: () => { window.location.href = '/upload-portal/admin.html'; },
+      h: () => { window.location.href = '/'; }
+    });
+  });
 </script>
 
 <div class="page">
@@ -45,6 +54,7 @@
     <div class="head-row">
       <p class="tagline dim">submit your competition entries<span class="cursor" aria-hidden="true">█</span></p>
       <nav class="bracket-nav" aria-label="theme and admin">
+        <a href="/"><span class="key" aria-hidden="true">[h]</span> wdps</a>
         <a href="/upload-portal/admin.html"><span class="key" aria-hidden="true">[a]</span> admin</a>
         <ThemeToggle />
       </nav>

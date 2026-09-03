@@ -1,7 +1,8 @@
 <script lang="ts">
   import { ConfirmModal } from '@wdps/shared-ui';
+  import { bindShortcuts } from '@wdps/shared-ui/shortcuts';
   import type { Competition, Entry } from '../../lib/types.js';
-  import { listEntries, lockCompetition, setEntryExcluded, deleteEntry } from '../../lib/api/client.js';
+  import { listEntries, lockCompetition, reopenCompetition, setEntryExcluded, deleteEntry } from '../../lib/api/client.js';
   import { downloadCompetitionZip } from '../../lib/export/downloadCompetition.js';
   import { moveToCompSheets } from '../../lib/bus/moveToCompSheets.js';
   import EntryCard from './EntryCard.svelte';
@@ -54,6 +55,24 @@
     }
   }
 
+  async function unlock() {
+    if (!competition) return;
+    busyAction = 'lock';
+    try {
+      competition = await reopenCompetition(competition.id);
+    } finally {
+      busyAction = '';
+    }
+  }
+
+  $effect(() => {
+    return bindShortcuts({
+      l: () => { if (competition?.status === 'open') lock(); else if (competition?.status === 'locked') unlock(); },
+      z: () => downloadZip(),
+      m: () => { if (competition?.status === 'locked') sendToCompSheets(); }
+    });
+  });
+
   async function toggleExcluded(entry: Entry) {
     if (!competition) return;
     const updated = await setEntryExcluded(competition.id, entry.id, !entry.excluded);
@@ -104,10 +123,16 @@
     <p class="dim">{competition.status} · {entries.length} entr{entries.length === 1 ? 'y' : 'ies'}</p>
     <p class="actions">
       {#if competition.status === 'open'}
-        <button type="button" class="btn" onclick={lock} disabled={busyAction === 'lock'}>lock entries</button>
+        <button type="button" class="btn" onclick={lock} disabled={busyAction === 'lock'}>
+          <span class="key" aria-hidden="true">[l]</span> lock entries
+        </button>
+      {:else}
+        <button type="button" class="btn" onclick={unlock} disabled={busyAction === 'lock'}>
+          <span class="key" aria-hidden="true">[l]</span> unlock entries
+        </button>
       {/if}
       <button type="button" class="btn" onclick={downloadZip} disabled={busyAction === 'zip' || entries.length === 0}>
-        {busyAction === 'zip' ? 'zipping…' : 'download zip'}
+        <span class="key" aria-hidden="true">[z]</span> {busyAction === 'zip' ? 'zipping…' : 'download zip'}
       </button>
       <button
         type="button"
@@ -116,7 +141,7 @@
         disabled={competition.status !== 'locked' || busyAction === 'move' || entries.length === 0}
         title={competition.status !== 'locked' ? 'lock entries first' : ''}
       >
-        {busyAction === 'move' ? 'sending…' : 'move to comp-sheets'}
+        <span class="key" aria-hidden="true">[m]</span> {busyAction === 'move' ? 'sending…' : 'move to comp-sheets'}
       </button>
     </p>
     {#if moveResult}<p class="ok">{moveResult}</p>{/if}
