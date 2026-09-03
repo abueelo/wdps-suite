@@ -1,7 +1,15 @@
 {
   "name": "wdps-suite",
   "compatibility_date": "2026-09-02",
+  "main": "worker.js",
   "assets": {
-    "directory": "./dist"
-  }
+    "directory": "./dist",
+    "binding": "ASSETS"
+  },
+  "kv_namespaces": [
+    { "binding": "COMPETITIONS_KV", "id": "676edbc2ed8145d89135e997f69e0ee3" }
+  ],
+  "r2_buckets": [
+    { "binding": "ENTRY_IMAGES", "bucket_name": "wdps-upload-portal-images" }
+  ]
 }
