@@ -40,7 +40,7 @@
  █▄▄ █▄█ █ ▀ █ █▀▀  ▄██ █▀█ ██▄ ██▄  █  ▄██</pre>
     <h1 class="visually-hidden">comp-sheets</h1>
     <div class="head-row">
-      <p class="tagline dim">rename &amp; export competition entries, entirely in your browser<span class="cursor" aria-hidden="true">█</span></p>
+      <p class="tagline dim">rename &amp; export competition entries<span class="cursor" aria-hidden="true">█</span></p>
       <nav class="bracket-nav" aria-label="theme and suite">
         <a href="/"><span class="key" aria-hidden="true">[h]</span> wdps</a>
         <ThemeToggle />

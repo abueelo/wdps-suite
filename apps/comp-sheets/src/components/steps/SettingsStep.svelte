@@ -23,10 +23,18 @@
 
   let capResult = $derived(computeCaps(photographerCounts, settingsStore.value.limit));
 
-  function isIncluded(record: ImageRecord): boolean {
+  // Whether a record makes the cut is a question of its position within its
+  // photographer's sorted list (matches ExportStep's list.slice(0, cap)) —
+  // not its raw `priority` field. Priority values aren't guaranteed to stay
+  // a clean 0-based sequence within a group (a record can be renamed to a
+  // different photographer in Review, or a sibling removed, without every
+  // remaining record's priority being renumbered), so comparing the raw
+  // field directly against the cap could flag a photographer's only image
+  // as "excluded" when it's actually first — and included — in their group.
+  function isIncluded(photographer: string, index: number): boolean {
     if (isCapError(capResult)) return false;
-    const cap = capResult.caps[record.photographer] ?? 0;
-    return record.priority < cap;
+    const cap = capResult.caps[photographer] ?? 0;
+    return index < cap;
   }
 
   function move(record: ImageRecord, direction: -1 | 1) {
@@ -118,7 +126,7 @@
       <ol>
         {#each list as record, i (record.id)}
           <li
-            class:excluded={!isIncluded(record)}
+            class:excluded={!isIncluded(photographer, i)}
             class:dragging={dragging?.recordId === record.id}
             draggable="true"
             ondragstart={() => { dragging = { photographer, recordId: record.id }; }}
@@ -133,7 +141,7 @@
             <span class="drag-handle" aria-hidden="true">≡</span>
             <span class="pos">{i + 1}.</span>
             <span class="title">{record.title || record.originalName}</span>
-            {#if !isIncluded(record)}<span class="dim">— excluded (over cap)</span>{/if}
+            {#if !isIncluded(photographer, i)}<span class="dim">— excluded (over cap)</span>{/if}
             <span class="move-buttons">
               <button class="link-btn" disabled={i === 0} onclick={() => move(record, -1)} aria-label="move up">↑</button>
               <button class="link-btn" disabled={i === list.length - 1} onclick={() => move(record, 1)} aria-label="move down">↓</button>
