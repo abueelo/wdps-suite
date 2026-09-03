@@ -13,7 +13,7 @@
       {#each competitions as c}
         <li>
           {#if c.status === 'open'}
-            <button type="button" class="btn" onclick={() => onPick(c)}>{c.name}</button>
+            <button type="button" class="btn" onclick={(e) => { e.currentTarget.blur(); onPick(c); }}>{c.name}</button>
           {:else}
             <span class="btn closed" aria-disabled="true">{c.name} <span class="dim">— closed for entry</span></span>
           {/if}
@@ -41,11 +41,6 @@
     width: 100%;
     text-align: left;
     display: block;
-  }
-  .competition-list .btn:hover,
-  .competition-list .btn:focus-visible {
-    border-color: var(--border);
-    color: var(--fg);
   }
   .closed {
     cursor: default;
