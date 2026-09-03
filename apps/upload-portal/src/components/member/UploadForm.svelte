@@ -223,6 +223,9 @@
   section.panel {
     --field-width: 18rem;
   }
+  section.panel:hover {
+    border-color: var(--border);
+  }
   .back-link {
     margin-top: 0.75rem;
     border-color: transparent;
