@@ -192,6 +192,14 @@
 
   {#if rows.length > 0}
     <p class="dim reorder-hint">drag <span aria-hidden="true">≡</span> to reorder</p>
+    <div class="row-header dim" aria-hidden="true">
+      <span></span>
+      <span></span>
+      <span>file</span>
+      <span>title</span>
+      <span></span>
+      <span></span>
+    </div>
     <ul class="row-list">
       {#each rows as row (row.id)}
         {@const editable = row.status === 'pending' || row.status === 'error'}
@@ -291,6 +299,15 @@
   .disabled-reason {
     margin-top: 0.5rem;
     font-size: 0.85em;
+  }
+  /* labels above the columns, same widths as the row grid below, so a
+     box that's already got text in it still shows what it's for. */
+  .row-header {
+    display: grid;
+    grid-template-columns: auto 72px 11rem 1fr auto auto;
+    column-gap: 1ch;
+    margin-top: 0.75rem;
+    font-size: 0.8em;
   }
   /* a grid rather than independent flex rows, so every row's thumbnail,
      filename and title box start at the same x position regardless of

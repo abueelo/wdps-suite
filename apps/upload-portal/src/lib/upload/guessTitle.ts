@@ -1,15 +1,21 @@
-// Guesses a title from a filename, the way comp-sheets guesses at author
-// and title (apps/comp-sheets/src/lib/parsing/filenameParser.ts) — same
-// word-splitting, since club members already name files that way for
-// that tool. The difference: comp-sheets has to guess at an unknown
-// batch of authors; here the photographer is already known (typed once
-// for the session), so instead of assuming their name sits at some
-// particular position in the filename, this searches the whole thing
-// for a run of words matching their name — wherever it actually is —
-// and strips just that.
+// Faithful port of comp-sheets' guessAuthorTitle
+// (apps/comp-sheets/src/lib/parsing/filenameParser.ts) — same positional
+// pattern: the name is whatever leading word(s) the Author_Title
+// convention puts there, not a string search for a known name anywhere
+// in the filename. The only difference from comp-sheets: there's just
+// one known name here (typed once for the session) instead of a growing
+// set built from an unknown batch, and only the title half is kept.
 const CAMERA_DEFAULT = /^(img|dsc|dscn|dcim|pxl|_mg|p|dji|mvimg)[-_]?\d+$/i;
 const PURELY_NUMERIC = /^\d+$/;
 const LEADING_NUMBER = /^(\d+)[_-]+(.+)$/;
+
+function humanize(segment: string): string {
+  return segment
+    .replace(/[_-]+/g, ' ')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2') // camelCase boundary
+    .trim()
+    .replace(/\s+/g, ' ');
+}
 
 function titleCase(s: string): string {
   return s.replace(/\b\w/g, (c) => c.toUpperCase());
@@ -23,25 +29,39 @@ function splitWords(segment: string): string[] {
     .flatMap((piece) => piece.replace(/([a-z0-9])([A-Z])/g, '$1 $2').split(/\s+/).filter(Boolean));
 }
 
-function titleFromRest(rest: string, knownPhotographer: string): string {
-  const words = splitWords(rest);
-  const knownWords = splitWords(knownPhotographer).map((w) => w.toLowerCase());
+/**
+ * Splits "author + title" text into the two fields, same as comp-sheets:
+ * exactly two top-level fields is unambiguous (first is the name). More
+ * than two falls back to a word-count guess — 2 leading words as the
+ * name normally, refined to whatever length actually matches the known
+ * photographer when that's found among the leading words.
+ */
+function titleFromRest(rest: string, photographer: string): string {
+  const known = photographer.trim().toLowerCase();
+  const topFields = rest.split(/[_-]+/).filter(Boolean);
 
-  if (knownWords.length > 0 && knownWords.length < words.length) {
-    const target = knownWords.join(' ');
-    for (let start = 0; start <= words.length - knownWords.length; start++) {
-      const slice = words.slice(start, start + knownWords.length).map((w) => w.toLowerCase());
-      if (slice.join(' ') === target) {
-        const remaining = [...words.slice(0, start), ...words.slice(start + knownWords.length)];
-        return titleCase(remaining.join(' '));
+  if (topFields.length === 2) {
+    const [, titlePart] = topFields;
+    return titleCase(humanize(titlePart));
+  }
+
+  const words = splitWords(rest);
+  if (words.length < 2) return titleCase(words.join(' '));
+
+  let authorWordCount = words.length >= 3 ? 2 : 1;
+  if (known) {
+    for (let len = Math.min(words.length - 1, 3); len >= 1; len--) {
+      if (words.slice(0, len).join(' ').toLowerCase() === known) {
+        authorWordCount = len;
+        break;
       }
     }
   }
 
-  return titleCase(words.join(' '));
+  return titleCase(words.slice(authorWordCount).join(' '));
 }
 
-/** Guesses a title from a filename, stripping the known photographer's name if it's embedded in it. */
+/** Guesses a title from a filename, following the same Author_Title pattern comp-sheets does. */
 export function guessTitle(filename: string, photographer: string): string {
   const withoutExt = filename.replace(/\.[^.]+$/, '');
   if (CAMERA_DEFAULT.test(withoutExt) || PURELY_NUMERIC.test(withoutExt) || withoutExt.trim() === '') {
