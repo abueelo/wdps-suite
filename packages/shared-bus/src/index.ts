@@ -17,6 +17,14 @@ export interface BusItem {
   filename: string;
   blob: Blob;
   contentType: string;
+  /**
+   * Optional structured data about this item, for a producer that already
+   * knows fields a consumer would otherwise have to guess at (e.g. a
+   * photographer/title pair) so the consumer can skip re-deriving them from
+   * `filename`. Shape is up to the producer/consumer pair — shared-bus
+   * doesn't interpret it.
+   */
+  meta?: Record<string, unknown>;
 }
 
 export interface BusPayload {
@@ -62,11 +70,24 @@ export async function putPayload(payload: NewBusPayload): Promise<BusPayload> {
   return full;
 }
 
-export async function listPayloads(type?: string): Promise<BusPayload[]> {
+export async function listPayloads(type?: string | string[]): Promise<BusPayload[]> {
   const db = await getDb();
-  const all: BusPayload[] = type
-    ? await db.getAllFromIndex(STORE, 'type', type)
-    : await db.getAll(STORE);
+  let all: BusPayload[];
+  if (!type) {
+    all = await db.getAll(STORE);
+  } else if (Array.isArray(type)) {
+    const seen = new Set<string>();
+    all = [];
+    for (const t of type) {
+      for (const payload of await db.getAllFromIndex(STORE, 'type', t)) {
+        if (seen.has(payload.id)) continue;
+        seen.add(payload.id);
+        all.push(payload);
+      }
+    }
+  } else {
+    all = await db.getAllFromIndex(STORE, 'type', type);
+  }
   return all.sort((a, b) => b.createdAt - a.createdAt);
 }
 
@@ -85,6 +106,13 @@ export async function deletePayload(id: string): Promise<void> {
 // since it's the contract between producer and consumer.
 export const IMAGE_SET_TYPE = 'image-set-jpeg-1920-72dpi';
 
+// A raw, unprocessed batch of competition entries — original bytes in
+// whatever format they were submitted in (tiff/png/jpeg), not yet resized
+// or renamed. Distinct from IMAGE_SET_TYPE, which specifically means
+// comp-sheets' own *finished* export: importing a raw batch under that tag
+// would make comp-sheets treat un-resized originals as if already done.
+export const RAW_ENTRY_SET_TYPE = 'raw-entry-set';
+
 // A small static manifest of the suite's apps and what payload types
 // each one accepts. This is what "send to another app" checks against —
 // an app should only ever be offered as a destination if it actually
@@ -97,7 +125,10 @@ export interface SuiteApp {
   acceptedTypes: string[];
 }
 
-export const SUITE_APPS: SuiteApp[] = [{ id: 'comp-sheets', name: 'comp-sheets', path: '/comp-sheets/', acceptedTypes: [IMAGE_SET_TYPE] }];
+export const SUITE_APPS: SuiteApp[] = [
+  { id: 'comp-sheets', name: 'comp-sheets', path: '/comp-sheets/', acceptedTypes: [IMAGE_SET_TYPE, RAW_ENTRY_SET_TYPE] },
+  { id: 'upload-portal', name: 'upload-portal', path: '/upload-portal/admin.html', acceptedTypes: [] }
+];
 
 /** Other apps (excluding `excludeId`) that accept `type`. */
 export function compatibleApps(type: string, excludeId?: string): SuiteApp[] {

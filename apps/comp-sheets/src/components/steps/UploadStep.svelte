@@ -2,7 +2,7 @@
   import { imagesStore } from '../../lib/state/images.svelte.js';
   import { parseFilename } from '../../lib/parsing/filenameParser.js';
   import { collectFromDataTransferItems, filterAcceptedFiles } from '../../lib/upload/collectFiles.js';
-  import { listPayloads, IMAGE_SET_TYPE, type BusPayload } from '@wdps/shared-bus';
+  import { listPayloads, IMAGE_SET_TYPE, RAW_ENTRY_SET_TYPE, type BusPayload } from '@wdps/shared-bus';
   import type { ImageRecord } from '../../lib/types.js';
 
   let { onNext }: { onNext: () => void } = $props();
@@ -13,24 +13,30 @@
   let busPayloads = $state<BusPayload[]>([]);
 
   $effect(() => {
-    listPayloads(IMAGE_SET_TYPE).then((p) => (busPayloads = p));
+    listPayloads([IMAGE_SET_TYPE, RAW_ENTRY_SET_TYPE]).then((p) => (busPayloads = p));
   });
 
-  function buildRecords(files: File[]): ImageRecord[] {
+  /** Photographer/title already known for a file (e.g. handed off from another app), keyed by File instance. */
+  type KnownMeta = Map<File, { photographer: string; title: string }>;
+
+  function buildRecords(files: File[], known?: KnownMeta): ImageRecord[] {
     // First pass: names that parse unambiguously become "known authors" so a
     // second, ambiguous filename elsewhere in the batch (e.g. one where the
     // photographer's own name is split across underscores) can be matched
     // against a real name instead of guessed at in isolation.
     const knownAuthors = new Set(
       files
-        .map((file) => parseFilename(file.name))
+        .map((file) => (known?.has(file) ? { ...known.get(file)!, confidence: 'ok' as const } : parseFilename(file.name)))
         .filter((p) => p.confidence === 'ok' && p.photographer)
         .map((p) => p.photographer.toLowerCase())
     );
 
     const perPhotographerCount = new Map<string, number>();
     return files.map((file) => {
-      const parsed = parseFilename(file.name, knownAuthors);
+      const meta = known?.get(file);
+      const parsed = meta
+        ? { photographer: meta.photographer, title: meta.title, confidence: 'ok' as const }
+        : parseFilename(file.name, knownAuthors);
       const count = perPhotographerCount.get(parsed.photographer) ?? 0;
       perPhotographerCount.set(parsed.photographer, count + 1);
       return {
@@ -46,7 +52,7 @@
     });
   }
 
-  async function addFiles(files: File[]) {
+  async function addFiles(files: File[], known?: KnownMeta) {
     busy = true;
     error = '';
     try {
@@ -55,7 +61,7 @@
         error = 'no .tif/.png/.jpg files found in that selection';
         return;
       }
-      imagesStore.add(buildRecords(accepted));
+      imagesStore.add(buildRecords(accepted, known));
     } finally {
       busy = false;
     }
@@ -81,10 +87,17 @@
     busy = true;
     error = '';
     try {
-      const files = payload.items.map(
-        (item) => new File([item.blob], item.filename, { type: item.contentType })
-      );
-      await addFiles(files);
+      const known: KnownMeta = new Map();
+      const files = payload.items.map((item) => {
+        const file = new File([item.blob], item.filename, { type: item.contentType });
+        const photographer = item.meta?.photographer;
+        const title = item.meta?.title;
+        if (typeof photographer === 'string' && typeof title === 'string') {
+          known.set(file, { photographer, title });
+        }
+        return file;
+      });
+      await addFiles(files, known);
     } finally {
       busy = false;
     }

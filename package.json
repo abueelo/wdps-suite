@@ -10,10 +10,12 @@
   "scripts": {
     "dev:comp-sheets": "npm run dev -w apps/comp-sheets",
     "dev:hub": "npm run dev -w apps/hub",
+    "dev:upload-portal": "npm run dev -w apps/upload-portal",
     "build": "node scripts/build.mjs",
     "build:comp-sheets": "npm run build -w apps/comp-sheets",
     "build:hub": "npm run build -w apps/hub",
-    "check": "npm run check -w apps/comp-sheets"
+    "build:upload-portal": "npm run build -w apps/upload-portal",
+    "check": "npm run check -w apps/comp-sheets && npm run check -w apps/upload-portal"
   },
   "engines": {
     "node": ">=18.17.0"

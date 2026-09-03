@@ -5,3 +5,4 @@ dist/
 .vite/
 .wrangler/
 .claude/
+.dev.vars

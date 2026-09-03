@@ -17,7 +17,8 @@ toggle.addEventListener('click', () => {
 
 bindShortcuts({
   t: () => toggle.click(),
-  c: () => { window.location.href = '/comp-sheets/'; }
+  c: () => { window.location.href = '/comp-sheets/'; },
+  u: () => { window.location.href = '/upload-portal/'; }
 });
 
 const yearEl = document.getElementById('year');

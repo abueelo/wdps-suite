@@ -1,0 +1,11 @@
+# copy this file to .dev.vars (gitignored) for local upload-portal Functions dev.
+# see CLOUDFLARE.md for how these get set in production.
+
+# any long random string, e.g. run: openssl rand -hex 32
+SESSION_SECRET=change-me-to-something-long-and-random
+
+# the passcode for /upload-portal/admin.html
+ADMIN_PASSCODE=change-me
+
+# not enforced until the member gate is switched on from the admin settings panel
+MEMBER_PASSCODE=change-me
