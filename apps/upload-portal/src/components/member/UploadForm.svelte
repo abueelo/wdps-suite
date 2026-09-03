@@ -54,7 +54,9 @@
     }
   });
 
-  let readyCount = $derived(rows.filter((r) => r.status === 'pending' && r.title.trim()).length);
+  // 'error' counts as ready too, matching uploadAll()'s own retry condition —
+  // otherwise a failed row locks the button at 0 with no way to retry it.
+  let readyCount = $derived(rows.filter((r) => (r.status === 'pending' || r.status === 'error') && r.title.trim()).length);
   let doneCount = $derived(rows.filter((r) => r.status === 'done').length);
   let untitledCount = $derived(rows.filter((r) => (r.status === 'pending' || r.status === 'error') && !r.title.trim()).length);
 
@@ -304,9 +306,11 @@
      box that's already got text in it still shows what it's for. */
   .row-header {
     display: grid;
-    grid-template-columns: auto 72px 11rem 1fr auto auto;
+    grid-template-columns: 1.5rem 72px 11rem 1fr auto auto;
     column-gap: 1ch;
     margin-top: 0.75rem;
+  }
+  .row-header span {
     font-size: 0.8em;
   }
   /* a grid rather than independent flex rows, so every row's thumbnail,
@@ -317,7 +321,7 @@
     list-style: none;
     margin-top: 0.5rem;
     display: grid;
-    grid-template-columns: auto 72px 11rem 1fr auto auto;
+    grid-template-columns: 1.5rem 72px 11rem 1fr auto auto;
     align-items: center;
     column-gap: 1ch;
     row-gap: 0.5rem;
