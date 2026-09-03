@@ -44,7 +44,8 @@
     <h1 class="name">upload-portal</h1>
     <div class="head-row">
       <p class="tagline dim">submit your competition entries<span class="cursor" aria-hidden="true">█</span></p>
-      <nav class="bracket-nav" aria-label="theme">
+      <nav class="bracket-nav" aria-label="theme and admin">
+        <a href="/upload-portal/admin.html"><span class="key" aria-hidden="true">[a]</span> admin</a>
         <ThemeToggle />
       </nav>
     </div>
