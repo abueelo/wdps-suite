@@ -11,6 +11,11 @@
     id: string;
     file: File;
     title: string;
+    // true while the title is still whatever guessTitle() produced — a
+    // manual edit clears this. Lets the guess get recomputed once a name
+    // is typed after files were already dropped, without ever
+    // clobbering something the member actually typed themselves.
+    titleAuto: boolean;
     status: 'pending' | 'uploading' | 'done' | 'error';
     error?: string;
     thumbnailUrl?: string;
@@ -37,8 +42,28 @@
     };
   });
 
+  // Re-guesses every still-untouched title whenever the name changes —
+  // covers dropping files before typing a name, same as typing it after.
+  $effect(() => {
+    const name = photographer;
+    for (const row of rows) {
+      if (row.titleAuto) {
+        const guessed = guessTitle(row.file.name, name);
+        if (row.title !== guessed) row.title = guessed;
+      }
+    }
+  });
+
   let readyCount = $derived(rows.filter((r) => r.status === 'pending' && r.title.trim()).length);
   let doneCount = $derived(rows.filter((r) => r.status === 'done').length);
+  let untitledCount = $derived(rows.filter((r) => (r.status === 'pending' || r.status === 'error') && !r.title.trim()).length);
+
+  let disabledReason = $derived.by(() => {
+    if (submitting || readyCount > 0) return '';
+    if (!photographer.trim()) return 'type your name above first';
+    if (untitledCount > 0) return `give ${untitledCount === 1 ? 'that image' : 'each image'} a title first`;
+    return '';
+  });
 
   async function decodeRow(row: Row) {
     try {
@@ -59,7 +84,7 @@
       const newIds = accepted.map(() => crypto.randomUUID());
       rows = [
         ...rows,
-        ...accepted.map((file, i): Row => ({ id: newIds[i], file, title: guessTitle(file.name, photographer), status: 'pending' }))
+        ...accepted.map((file, i): Row => ({ id: newIds[i], file, title: guessTitle(file.name, photographer), titleAuto: true, status: 'pending' }))
       ];
       // Re-read the just-added rows back out of `rows` rather than closing
       // over the plain objects built above — $state deeply proxies on
@@ -196,7 +221,8 @@
           <input
             class="title-input"
             type="text"
-            bind:value={row.title}
+            value={row.title}
+            oninput={(e) => { row.title = (e.currentTarget as HTMLInputElement).value; row.titleAuto = false; }}
             placeholder="title"
             disabled={!editable}
           />
@@ -213,8 +239,9 @@
     </ul>
 
     <button class="btn primary" onclick={uploadAll} disabled={submitting || readyCount === 0 || !photographer.trim()}>
-      {submitting ? 'uploading…' : `upload ${readyCount} image${readyCount === 1 ? '' : 's'}`}
+      {submitting ? 'uploading…' : `upload and submit ${readyCount} image${readyCount === 1 ? '' : 's'}`}
     </button>
+    {#if disabledReason}<p class="dim disabled-reason">{disabledReason}</p>{/if}
     {#if doneCount > 0}<p class="ok">{doneCount} uploaded so far.</p>{/if}
   {/if}
 </section>
@@ -259,6 +286,10 @@
   }
   .reorder-hint {
     margin-top: 1.25rem;
+    font-size: 0.85em;
+  }
+  .disabled-reason {
+    margin-top: 0.5rem;
     font-size: 0.85em;
   }
   /* a grid rather than independent flex rows, so every row's thumbnail,
