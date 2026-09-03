@@ -1,20 +1,15 @@
-// Ported from comp-sheets' apps/comp-sheets/src/lib/parsing/filenameParser.ts
-// — same word-splitting approach, since club members already name their
-// files NN_Author_Title for that tool. The difference: comp-sheets has to
-// guess at an unknown batch of authors; here the photographer is already
-// known (typed once for the whole session), so it's used to recognise
-// and strip their name instead of assuming a name is embedded at all.
+// Guesses a title from a filename, the way comp-sheets guesses at author
+// and title (apps/comp-sheets/src/lib/parsing/filenameParser.ts) — same
+// word-splitting, since club members already name files that way for
+// that tool. The difference: comp-sheets has to guess at an unknown
+// batch of authors; here the photographer is already known (typed once
+// for the session), so instead of assuming their name sits at some
+// particular position in the filename, this searches the whole thing
+// for a run of words matching their name — wherever it actually is —
+// and strips just that.
 const CAMERA_DEFAULT = /^(img|dsc|dscn|dcim|pxl|_mg|p|dji|mvimg)[-_]?\d+$/i;
 const PURELY_NUMERIC = /^\d+$/;
 const LEADING_NUMBER = /^(\d+)[_-]+(.+)$/;
-
-function humanize(segment: string): string {
-  return segment
-    .replace(/[_-]+/g, ' ')
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2') // camelCase boundary
-    .trim()
-    .replace(/\s+/g, ' ');
-}
 
 function titleCase(s: string): string {
   return s.replace(/\b\w/g, (c) => c.toUpperCase());
@@ -29,27 +24,16 @@ function splitWords(segment: string): string[] {
 }
 
 function titleFromRest(rest: string, knownPhotographer: string): string {
-  const known = knownPhotographer.trim().toLowerCase();
-  const topFields = rest.split(/[_-]+/).filter(Boolean);
-
-  if (topFields.length === 2) {
-    const [namePart, titlePart] = topFields;
-    // only treat the first field as a name if it actually matches the
-    // known photographer — otherwise a genuine two-word title (e.g.
-    // "Stunning_Sunset") would lose its first word for nothing.
-    if (known && humanize(namePart).toLowerCase() === known) {
-      return titleCase(humanize(titlePart));
-    }
-    return titleCase(humanize(rest));
-  }
-
   const words = splitWords(rest);
-  if (words.length < 2) return titleCase(words.join(' '));
+  const knownWords = splitWords(knownPhotographer).map((w) => w.toLowerCase());
 
-  if (known) {
-    for (let len = Math.min(words.length - 1, 3); len >= 1; len--) {
-      if (words.slice(0, len).join(' ').toLowerCase() === known) {
-        return titleCase(words.slice(len).join(' '));
+  if (knownWords.length > 0 && knownWords.length < words.length) {
+    const target = knownWords.join(' ');
+    for (let start = 0; start <= words.length - knownWords.length; start++) {
+      const slice = words.slice(start, start + knownWords.length).map((w) => w.toLowerCase());
+      if (slice.join(' ') === target) {
+        const remaining = [...words.slice(0, start), ...words.slice(start + knownWords.length)];
+        return titleCase(remaining.join(' '));
       }
     }
   }
