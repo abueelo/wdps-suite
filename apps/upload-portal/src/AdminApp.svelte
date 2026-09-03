@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ThemeToggle } from '@wdps/shared-ui';
   import { bindShortcuts } from '@wdps/shared-ui/shortcuts';
-  import { adminMe, adminLogin, adminLogout, listAllCompetitions } from './lib/api/client.js';
+  import { adminMe, adminLogin, adminLogout, listCompetitions } from './lib/api/client.js';
   import type { Competition } from './lib/types.js';
   import PasscodeGate from './components/PasscodeGate.svelte';
   import CompetitionList from './components/admin/CompetitionList.svelte';
@@ -25,7 +25,7 @@
   });
 
   async function refresh() {
-    competitions = await listAllCompetitions();
+    competitions = await listCompetitions();
   }
 
   async function login(passcode: string) {

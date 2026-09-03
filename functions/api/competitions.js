@@ -8,13 +8,10 @@ async function loadAll(env) {
   return (await env.COMPETITIONS_KV.get(KEY, 'json')) || [];
 }
 
-export async function onRequestGet({ request, env }) {
-  const all = await loadAll(env);
-  const url = new URL(request.url);
-  if (url.searchParams.get('all') && (await requireAdmin(request, env))) {
-    return json(all);
-  }
-  return json(all.filter((c) => c.status === 'open'));
+// Public and admin see the same list — members need to see locked
+// competitions too (rendered as closed-for-entry), not just open ones.
+export async function onRequestGet({ env }) {
+  return json(await loadAll(env));
 }
 
 export async function onRequestPost({ request, env }) {

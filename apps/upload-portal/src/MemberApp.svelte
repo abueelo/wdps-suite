@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ThemeToggle } from '@wdps/shared-ui';
   import { bindShortcuts } from '@wdps/shared-ui/shortcuts';
-  import { getSettings, listOpenCompetitions, memberLogin } from './lib/api/client.js';
+  import { getSettings, listCompetitions, memberLogin } from './lib/api/client.js';
   import type { Competition } from './lib/types.js';
   import PasscodeGate from './components/PasscodeGate.svelte';
   import CompetitionPicker from './components/member/CompetitionPicker.svelte';
@@ -22,7 +22,7 @@
         const settings = await getSettings();
         gateEnabled = settings.memberGateEnabled;
         if (!gateEnabled || gatePassed) {
-          competitions = await listOpenCompetitions();
+          competitions = await listCompetitions();
         }
       } catch (err) {
         error = err instanceof Error ? err.message : 'failed to load';
@@ -36,7 +36,7 @@
     await memberLogin(passcode);
     gatePassed = true;
     localStorage.setItem(GATE_PASSED_KEY, '1');
-    competitions = await listOpenCompetitions();
+    competitions = await listCompetitions();
   }
 
   $effect(() => {

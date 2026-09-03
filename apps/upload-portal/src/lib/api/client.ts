@@ -30,8 +30,9 @@ export const putSettings = (settings: PortalSettings) =>
 
 // -- competitions --
 
-export const listOpenCompetitions = () => request<Competition[]>('/api/competitions');
-export const listAllCompetitions = () => request<Competition[]>('/api/competitions?all=1');
+// Same endpoint for members and admin — it returns every competition,
+// open and locked alike.
+export const listCompetitions = () => request<Competition[]>('/api/competitions');
 export const createCompetition = (name: string) => postJson<Competition>('/api/competitions', { name });
 export const getCompetition = (id: string) => request<Competition>(`/api/competition/${id}`);
 export const lockCompetition = (id: string) => patchJson<Competition>(`/api/competition/${id}`, { status: 'locked' });
