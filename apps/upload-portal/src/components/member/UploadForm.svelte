@@ -194,19 +194,20 @@
           </div>
           <span class="filename">{row.file.name}</span>
           <input
+            class="title-input"
             type="text"
             bind:value={row.title}
             placeholder="title"
             disabled={!editable}
           />
           {#if row.status === 'done'}
-            <span class="ok">uploaded</span>
+            <span class="ok row-status">uploaded</span>
           {:else if row.status === 'uploading'}
-            <span class="dim">uploading…</span>
+            <span class="dim row-status">uploading…</span>
           {:else}
-            <button type="button" class="btn remove-btn" onclick={() => removeRow(row.id)} aria-label="remove">×</button>
+            <button type="button" class="btn remove-btn row-status" onclick={() => removeRow(row.id)} aria-label="remove">×</button>
           {/if}
-          {#if row.status === 'error'}<span class="danger">{row.error}</span>{/if}
+          {#if row.status === 'error'}<span class="danger row-error">{row.error}</span>{/if}
         </li>
       {/each}
     </ul>
@@ -257,27 +258,31 @@
     margin-top: 1.25rem;
     font-size: 0.85em;
   }
+  /* a grid rather than independent flex rows, so every row's thumbnail,
+     filename and title box start at the same x position regardless of
+     how wide any one row's own content is — a variable-width filename
+     or thumbnail no longer staggers the row below it. */
   .row-list {
     list-style: none;
     margin-top: 0.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    display: grid;
+    grid-template-columns: auto 72px 11rem 1fr auto auto;
+    align-items: center;
+    column-gap: 1ch;
+    row-gap: 0.5rem;
   }
   .row-list li {
-    display: flex;
-    align-items: center;
-    gap: 1ch;
-    flex-wrap: wrap;
+    display: contents;
   }
-  .row-list li.dragging {
+  .row-list li.dragging > * {
     opacity: 0.4;
   }
-  .row-list li.done {
+  .row-list li.done > * {
     opacity: 0.6;
     cursor: default;
   }
   .drag-handle {
+    grid-column: 1;
     color: var(--dim);
     cursor: grab;
   }
@@ -285,15 +290,18 @@
     cursor: grabbing;
   }
   .thumb-wrap {
+    grid-column: 2;
+    width: 72px;
     height: 64px;
-    flex-shrink: 0;
     display: flex;
     align-items: center;
+    justify-content: center;
   }
   .thumb {
-    height: 64px;
+    max-width: 100%;
+    max-height: 100%;
     width: auto;
-    max-width: 96px;
+    height: auto;
     object-fit: contain;
     border: 1px solid var(--border);
     display: block;
@@ -304,15 +312,21 @@
     border: 1px dashed var(--border);
   }
   .filename {
-    min-width: 8rem;
-    max-width: 14rem;
+    grid-column: 3;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .row-list input {
-    width: var(--field-width);
-    flex: none;
+  .title-input {
+    grid-column: 4;
+    width: 100%;
+    min-width: 14rem;
+  }
+  .row-status {
+    grid-column: 5;
+  }
+  .row-error {
+    grid-column: 6;
   }
   .remove-btn {
     font-size: 1.2em;

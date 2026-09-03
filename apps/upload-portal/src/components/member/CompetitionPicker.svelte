@@ -42,6 +42,11 @@
     text-align: left;
     display: block;
   }
+  .competition-list .btn:hover,
+  .competition-list .btn:focus-visible {
+    border-color: var(--border);
+    color: var(--fg);
+  }
   .closed {
     cursor: default;
     opacity: 0.6;
