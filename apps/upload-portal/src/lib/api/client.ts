@@ -1,4 +1,4 @@
-import type { Competition, Entry, PortalSettings } from '../types.js';
+import type { Competition, Entry, LogEntry, PortalSettings, WipeResult } from '../types.js';
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(path, { ...init, credentials: 'include' });
@@ -52,6 +52,15 @@ export const setEntryExcluded = (competitionId: string, entryId: string, exclude
 
 export const deleteEntry = (competitionId: string, entryId: string) =>
   request<{ ok: true }>(`/api/competition/${competitionId}/entry/${entryId}`, { method: 'DELETE' });
+
+// -- owner --
+
+export const ownerMe = () => request<{ authed: boolean }>('/api/owner-me');
+export const ownerLogout = () => request<{ ok: true }>('/api/owner-logout');
+export const ownerLog = () => request<LogEntry[]>('/api/owner-log');
+export const ownerResetPasscode = (role: 'admin' | 'member', passcode: string) =>
+  postJson<{ ok: true }>('/api/owner-reset-passcode', { role, passcode });
+export const ownerWipe = (scope: 'images' | 'full') => postJson<WipeResult>('/api/owner-wipe', { scope });
 
 export async function fetchEntryBlob(url: string): Promise<Blob> {
   const res = await fetch(url, { credentials: 'include' });

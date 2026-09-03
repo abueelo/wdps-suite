@@ -9,7 +9,7 @@ comp-sheets runs entirely in the browser — upload photos, it renames and resiz
 ## apps
 
 - **comp-sheets** — upload a batch of entries, fix up any names it guessed wrong, set a fair per-photographer limit, and export. Judge gets an anonymised set with no photographer names, scorer gets the full thing.
-- **upload-portal** — lets members submit their own competition entries (title, name, image) instead of the organiser collecting them by hand. Admin reviews what came in, grouped by photographer, and can lock a competition, download it as a zip, or hand it straight off to comp-sheets.
+- **upload-portal** — lets members submit their own competition entries (title, name, image) instead of the organiser collecting them by hand. Admin reviews what came in, grouped by photographer, and can lock a competition, download it as a zip, or hand it straight off to comp-sheets. A GitHub-gated owner console sits above that — reset the admin/member passcodes, wipe the storage, see a log of what's happened — reachable from the "abueelo" link at the bottom of any page.
 
 More apps can live in here later — see `packages/shared-bus` below.
 

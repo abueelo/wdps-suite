@@ -3,6 +3,7 @@ import '@wdps/shared-ui/styles/terminal.css';
 import './style.css';
 import { getStoredTheme, toggleTheme } from '@wdps/shared-ui/theme';
 import { bindShortcuts } from '@wdps/shared-ui/shortcuts';
+import { setFooterYear } from '@wdps/shared-ui/year';
 
 const toggle = document.getElementById('theme-toggle') as HTMLButtonElement;
 const modeLabel = toggle.querySelector('.mode') as HTMLSpanElement;
@@ -21,5 +22,4 @@ bindShortcuts({
   u: () => { window.location.href = '/upload-portal/'; }
 });
 
-const yearEl = document.getElementById('year');
-if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+setFooterYear();

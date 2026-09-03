@@ -1,4 +1,4 @@
-import { requireAdmin, validId, entryImageKey, json } from '../../_lib.js';
+import { requireAdmin, validId, entryImageKey, appendLog, json } from '../../_lib.js';
 
 const COMPETITIONS_KEY = 'competitions';
 const MAX_LEN = { name: 120 };
@@ -41,8 +41,9 @@ export async function onRequestPatch({ request, env, params }) {
   if (typeof body.name === 'string' && body.name.trim()) {
     competition.name = body.name.trim().slice(0, MAX_LEN.name);
   }
-  if (body.status === 'open' || body.status === 'locked') {
+  if ((body.status === 'open' || body.status === 'locked') && body.status !== competition.status) {
     competition.status = body.status;
+    await appendLog(env, body.status === 'locked' ? 'competition.lock' : 'competition.reopen', competition.name);
   }
 
   await env.COMPETITIONS_KV.put(COMPETITIONS_KEY, JSON.stringify(all));
@@ -71,6 +72,7 @@ export async function onRequestDelete({ request, env, params }) {
 
   const remaining = all.filter((c) => c.id !== params.id);
   await env.COMPETITIONS_KV.put(COMPETITIONS_KEY, JSON.stringify(remaining));
+  await appendLog(env, 'competition.delete', competition.name);
 
   return json({ ok: true });
 }

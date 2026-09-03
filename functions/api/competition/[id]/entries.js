@@ -8,6 +8,7 @@ import {
   familyForExt,
   contentTypeForFamily,
   sniffEntryFormat,
+  appendLog,
   json
 } from '../../../_lib.js';
 
@@ -131,6 +132,7 @@ export async function onRequestPost({ request, env, params }) {
 
   competition.entryCount = entries.length;
   await env.COMPETITIONS_KV.put(COMPETITIONS_KEY, JSON.stringify(all));
+  await appendLog(env, 'entry.upload', `${title} — ${photographer} (${competition.name})`);
 
   return json(entry);
 }

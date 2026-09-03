@@ -9,3 +9,7 @@ ADMIN_PASSCODE=change-me
 
 # not enforced until the member gate is switched on from the admin settings panel
 MEMBER_PASSCODE=change-me
+
+# from a GitHub OAuth App (see CLOUDFLARE.md) — gates /upload-portal/owner.html
+GITHUB_CLIENT_ID=your-dev-oauth-app-client-id
+GITHUB_CLIENT_SECRET=your-dev-oauth-app-client-secret

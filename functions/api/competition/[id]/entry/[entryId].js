@@ -1,4 +1,4 @@
-import { requireAdmin, validId, entryImageKey, json } from '../../../../_lib.js';
+import { requireAdmin, validId, entryImageKey, appendLog, json } from '../../../../_lib.js';
 
 const COMPETITIONS_KEY = 'competitions';
 
@@ -27,6 +27,7 @@ export async function onRequestPatch({ request, env, params }) {
 
   entry.excluded = !!body.excluded;
   await env.COMPETITIONS_KV.put(entriesKeyFor(params.id), JSON.stringify(entries));
+  await appendLog(env, entry.excluded ? 'entry.exclude' : 'entry.restore', entry.title);
   return json(entry);
 }
 
@@ -40,6 +41,7 @@ export async function onRequestDelete({ request, env, params }) {
 
   const entriesKey = entriesKeyFor(params.id);
   const entries = (await env.COMPETITIONS_KV.get(entriesKey, 'json')) || [];
+  const entry = entries.find((e) => e.id === params.entryId);
   const remaining = entries.filter((e) => e.id !== params.entryId);
   if (remaining.length === entries.length) {
     return json({ error: 'not found' }, { status: 404 });
@@ -54,6 +56,7 @@ export async function onRequestDelete({ request, env, params }) {
     competition.entryCount = remaining.length;
     await env.COMPETITIONS_KV.put(COMPETITIONS_KEY, JSON.stringify(all));
   }
+  await appendLog(env, 'entry.delete', entry ? entry.title : params.entryId);
 
   return json({ ok: true });
 }

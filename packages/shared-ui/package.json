@@ -12,6 +12,7 @@
     },
     "./theme": "./src/theme.ts",
     "./shortcuts": "./src/shortcuts.ts",
+    "./year": "./src/year.ts",
     "./styles/*": "./src/styles/*"
   },
   "peerDependencies": {

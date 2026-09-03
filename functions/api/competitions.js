@@ -1,4 +1,4 @@
-import { requireAdmin, newId, json } from '../_lib.js';
+import { requireAdmin, newId, appendLog, json } from '../_lib.js';
 
 const KEY = 'competitions';
 const MAX_COMPETITIONS = 100;
@@ -52,5 +52,6 @@ export async function onRequestPost({ request, env }) {
 
   all.push(competition);
   await env.COMPETITIONS_KV.put(KEY, JSON.stringify(all));
+  await appendLog(env, 'competition.create', name);
   return json(competition);
 }

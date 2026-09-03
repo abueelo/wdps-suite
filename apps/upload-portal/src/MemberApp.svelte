@@ -63,7 +63,7 @@
   {/if}
 
   <footer class="suite-footer">
-    <p><span aria-hidden="true">☼ </span>wdps · {new Date().getFullYear()}<span aria-hidden="true"> ☼</span></p>
+    <p><span aria-hidden="true">☼ </span><a class="edit-link" href="/upload-portal/owner.html"><span class="swap">abueelo</span></a> · <span id="year">1970</span><span aria-hidden="true"> ☼</span></p>
   </footer>
 </div>
 

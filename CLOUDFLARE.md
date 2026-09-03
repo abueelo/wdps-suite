@@ -40,6 +40,16 @@ Every other app in the suite is a plain static build with nothing uploaded anywh
 
 For local dev: `cp .dev.vars.example .dev.vars`, fill it in, then run Functions against local KV/R2 with `npx wrangler pages dev dist --kv COMPETITIONS_KV --r2 ENTRY_IMAGES` (build first with `npm run build`).
 
+## 5. Owner console
+
+`/upload-portal/owner.html` — reachable by clicking "abueelo" at the bottom of any page — is GitHub-gated on top of the admin passcode, same idea as this portfolio site's own `/edit`. It can reset the admin/member passcodes without a redeploy, wipe the portal's storage, and show a log of uploads/logins.
+
+1. GitHub → **Settings** → **Developer settings** → **OAuth Apps** → **New OAuth App**. Homepage `https://wdps.russl.dev`, callback `https://wdps.russl.dev/api/owner-callback`. Generate a client secret.
+2. Add two more Pages secrets (same Functions settings page as above): `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`.
+3. That's it — no separate "who's the owner" setting, it's hardcoded to `abueelo` in `functions/_lib.js`.
+
+For local dev, a second OAuth App pointed at `http://localhost:8788` / `http://localhost:8788/api/owner-callback` works the same way portfolio's dev app does — add those to `.dev.vars` instead.
+
 ## notes
 
 - Every app except upload-portal is a plain static build — everything else in the suite runs client-side in the visitor's browser, nothing uploaded anywhere.

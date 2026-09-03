@@ -5,6 +5,12 @@
 
 const SESSION_DAYS = 7;
 const KV_KEY_SETTINGS = 'settings';
+const KV_KEY_LOG = 'log';
+const MAX_LOG_ROWS = 500;
+
+// The one GitHub account allowed into the owner console — hardcoded like
+// portfolio_site's OWNER, since it's not meant to change.
+export const OWNER = 'abueelo';
 
 const enc = new TextEncoder();
 
@@ -41,7 +47,7 @@ export function getCookie(request, name) {
   return null;
 }
 
-const COOKIE_NAME = { admin: 'admin_session', member: 'member_session' };
+const COOKIE_NAME = { admin: 'admin_session', member: 'member_session', owner: 'owner_session' };
 
 export async function makeSessionCookie(request, env, role) {
   const expiry = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
@@ -73,8 +79,20 @@ export async function isMember(request, env) {
   return hasSession(request, env, 'member');
 }
 
+export async function isOwner(request, env) {
+  return hasSession(request, env, 'owner');
+}
+
+// The owner is a strict superset of admin — GitHub-authed owner sessions
+// pass admin checks too, so there's no dead end where you're logged into
+// the owner console but locked out of the regular admin screens.
 export async function requireAdmin(request, env) {
+  if (await isOwner(request, env)) return true;
   return isAdmin(request, env);
+}
+
+export async function requireOwner(request, env) {
+  return isOwner(request, env);
 }
 
 /**
@@ -85,6 +103,7 @@ export async function requireAdmin(request, env) {
  * enforcing MEMBER_PASSCODE — no code path changes.
  */
 export async function requireMemberOrAdmin(request, env) {
+  if (await isOwner(request, env)) return true;
   if (await isAdmin(request, env)) return true;
   const settings = await getSettings(env);
   if (!settings.memberGateEnabled) return true;
@@ -97,12 +116,58 @@ export async function checkPasscode(candidate, expected) {
   return timingSafeEqualHex(a, b);
 }
 
+// Keyed hash for passcodes the owner has reset from the console — not
+// reversible from the stored value alone (needs SESSION_SECRET too), so a
+// KV read doesn't hand over the plaintext passcode. Reuses the existing
+// hmac() helper rather than adding new crypto.
+export async function hashPasscode(env, passcode) {
+  return hmac(env.SESSION_SECRET, `passcode:${passcode}`);
+}
+
+/**
+ * Checks a candidate passcode against whichever is authoritative right
+ * now: an owner-set hash in KV settings if one exists, otherwise the
+ * env var it started out as. This is what makes passcodes resettable
+ * from the owner console without a Cloudflare dashboard edit + redeploy —
+ * the first reset just switches the authoritative source over.
+ */
+export async function checkPasscodeForRole(env, role, candidate) {
+  const settings = await getSettings(env);
+  const storedHash = role === 'admin' ? settings.adminPasscodeHash : settings.memberPasscodeHash;
+  if (storedHash) {
+    if (typeof candidate !== 'string' || !candidate) return false;
+    return timingSafeEqualHex(await hashPasscode(env, candidate), storedHash);
+  }
+  const envVar = role === 'admin' ? env.ADMIN_PASSCODE : env.MEMBER_PASSCODE;
+  return checkPasscode(candidate, envVar);
+}
+
 export async function getSettings(env) {
   return (await env.COMPETITIONS_KV.get(KV_KEY_SETTINGS, 'json')) || { memberGateEnabled: false };
 }
 
 export async function putSettings(env, settings) {
   await env.COMPETITIONS_KV.put(KV_KEY_SETTINGS, JSON.stringify(settings));
+}
+
+/**
+ * Appends one row to the owner-visible audit log (newest first, capped —
+ * oldest dropped past MAX_LOG_ROWS, same style as photos.js's MAX_ROWS).
+ * Never throws: a logging hiccup should never break the action it's
+ * logging, so failures are swallowed here rather than propagated.
+ */
+export async function appendLog(env, type, detail) {
+  try {
+    const log = (await env.COMPETITIONS_KV.get(KV_KEY_LOG, 'json')) || [];
+    log.unshift({ id: newId(), at: Date.now(), type, detail: detail || '' });
+    await env.COMPETITIONS_KV.put(KV_KEY_LOG, JSON.stringify(log.slice(0, MAX_LOG_ROWS)));
+  } catch {
+    // best-effort — see comment above
+  }
+}
+
+export async function getLog(env) {
+  return (await env.COMPETITIONS_KV.get(KV_KEY_LOG, 'json')) || [];
 }
 
 export function json(data, init = {}) {

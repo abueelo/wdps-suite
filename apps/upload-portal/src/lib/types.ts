@@ -30,3 +30,18 @@ export interface Entry {
 export interface PortalSettings {
   memberGateEnabled: boolean;
 }
+
+export interface LogEntry {
+  id: string;
+  at: number;
+  type: string;
+  detail: string;
+}
+
+export interface WipeResult {
+  ok: true;
+  scope: 'images' | 'full';
+  imagesDeleted: number;
+  entriesAffected: number;
+  competitionsAffected: number;
+}
