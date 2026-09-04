@@ -60,10 +60,17 @@
   let doneCount = $derived(rows.filter((r) => r.status === 'done').length);
   let untitledCount = $derived(rows.filter((r) => (r.status === 'pending' || r.status === 'error') && !r.title.trim()).length);
 
+  // Mirrors the button's own disabled condition, in the same order it
+  // checks things — a name-check that ran after a readyCount check meant
+  // a batch with a title already filled in could still show no reason
+  // at all while the button sat disabled for a still-empty name field.
   let disabledReason = $derived.by(() => {
-    if (submitting || readyCount > 0) return '';
+    if (submitting) return '';
     if (!photographer.trim()) return 'type your name above first';
-    if (untitledCount > 0) return `give ${untitledCount === 1 ? 'that image' : 'each image'} a title first`;
+    if (readyCount === 0) {
+      if (untitledCount > 0) return `give ${untitledCount === 1 ? 'that image' : 'each image'} a title first`;
+      return '';
+    }
     return '';
   });
 
@@ -248,10 +255,10 @@
       {/each}
     </ul>
 
+    {#if disabledReason}<p class="warn upload-warn">{disabledReason}</p>{/if}
     <button class="btn primary" onclick={uploadAll} disabled={submitting || readyCount === 0 || !photographer.trim()}>
       {submitting ? 'uploading…' : `upload and submit ${readyCount} image${readyCount === 1 ? '' : 's'}`}
     </button>
-    {#if disabledReason}<p class="dim disabled-reason">{disabledReason}</p>{/if}
     {#if doneCount > 0}<p class="ok">{doneCount} uploaded so far.</p>{/if}
   {/if}
 </section>
@@ -298,9 +305,8 @@
     margin-top: 1.25rem;
     font-size: 0.85em;
   }
-  .disabled-reason {
-    margin-top: 0.5rem;
-    font-size: 0.85em;
+  .upload-warn {
+    margin-top: 1.25rem;
   }
   /* labels above the columns, same widths as the row grid below, so a
      box that's already got text in it still shows what it's for. */
