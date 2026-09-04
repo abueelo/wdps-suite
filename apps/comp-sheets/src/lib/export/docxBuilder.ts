@@ -13,10 +13,16 @@ import {
 } from 'docx';
 import type { OrderedEntry } from '../types.js';
 
+export interface ThumbnailData {
+  bytes: Uint8Array;
+  width: number;
+  height: number;
+}
+
 export interface DocxOptions {
   competitionName: string;
   includeThumbnails: boolean;
-  thumbnails: Map<string, Uint8Array>; // imageId -> thumbnail JPEG bytes
+  thumbnails: Map<string, ThumbnailData>; // imageId -> thumbnail JPEG + its dimensions
 }
 
 const DEFAULT_FONT = 'Calibri';
@@ -64,8 +70,16 @@ function textCell(text: string, width: number): TableCell {
   return new TableCell({ width: cellWidth(width), children: [new Paragraph(text)] });
 }
 
-function thumbnailCell(bytes: Uint8Array | undefined, width: number): TableCell {
-  if (!bytes) return new TableCell({ width: cellWidth(width), children: [new Paragraph('')] });
+// Scales width/height down to fit inside the THUMB_DISPLAY box while
+// keeping the image's own aspect ratio, so portrait and landscape shots
+// both sit un-stretched in the cell (just letterboxed within it).
+function containDimensions(width: number, height: number): { width: number; height: number } {
+  const scale = Math.min(THUMB_DISPLAY_WIDTH / width, THUMB_DISPLAY_HEIGHT / height);
+  return { width: Math.round(width * scale), height: Math.round(height * scale) };
+}
+
+function thumbnailCell(thumb: ThumbnailData | undefined, width: number): TableCell {
+  if (!thumb) return new TableCell({ width: cellWidth(width), children: [new Paragraph('')] });
   return new TableCell({
     width: cellWidth(width),
     children: [
@@ -73,8 +87,8 @@ function thumbnailCell(bytes: Uint8Array | undefined, width: number): TableCell 
         children: [
           new ImageRun({
             type: 'jpg',
-            data: bytes,
-            transformation: { width: THUMB_DISPLAY_WIDTH, height: THUMB_DISPLAY_HEIGHT }
+            data: thumb.bytes,
+            transformation: containDimensions(thumb.width, thumb.height)
           })
         ]
       })

@@ -6,7 +6,7 @@
   import { computeCaps, isCapError, type PhotographerCount } from '../../lib/fairness/tierCap.js';
   import { buildCompetitionOrder } from '../../lib/order/competitionOrder.js';
   import { processJobs } from '../../lib/processing/workerPool.js';
-  import { buildScorerDoc, buildJudgeDoc } from '../../lib/export/docxBuilder.js';
+  import { buildScorerDoc, buildJudgeDoc, type ThumbnailData } from '../../lib/export/docxBuilder.js';
   import { streamExportZip } from '../../lib/export/zipBuilder.js';
   import { saveStreamedFile } from '../../lib/export/download.js';
   import { putPayload, compatibleApps, IMAGE_SET_TYPE } from '@wdps/shared-bus';
@@ -79,10 +79,11 @@
     );
 
     const processed = new Map<string, ProcessedImage>();
-    const thumbnails = new Map<string, Uint8Array>();
+    const thumbnails = new Map<string, ThumbnailData>();
     for (const [id, r] of results) {
       processed.set(id, { imageId: id, bytes: r.bytes, thumbnail: r.thumbnail, width: r.width, height: r.height });
-      thumbnails.set(id, r.thumbnail);
+      // Thumbnail is a scaled-down copy of the full-size image, so it shares its aspect ratio.
+      thumbnails.set(id, { bytes: r.thumbnail, width: r.width, height: r.height });
     }
 
     const usableOrder = order.filter((e) => processed.has(e.image.id));
