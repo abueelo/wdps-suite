@@ -185,7 +185,7 @@
     <span>your <span class="field-label">full name</span></span>
     <input type="text" bind:value={photographer} placeholder="Jane Doe" autocomplete="off" />
   </label>
-  <p class="dim name-hint">first and last name, so entries can be credited correctly</p>
+  <p class="dim name-hint">first and last name please, so entries can be credited correctly</p>
 
   <div
     class="dropzone"
