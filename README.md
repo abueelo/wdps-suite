@@ -4,17 +4,31 @@ Tools for the club's digital competitions, at [wdps.russl.dev](https://wdps.russ
 
 ![hub](docs/screenshots/hub.jpg)
 
-comp-sheets runs entirely in the browser — upload photos, it renames and resizes them to whatever format the competition needs, and spits out a zip with correctly named images plus judge and scorer score sheets. Nothing gets uploaded anywhere for that one; it's all done client-side with canvas and web workers.
-
 ## apps
 
-- **comp-sheets** — upload a batch of entries, fix up any names it guessed wrong, set a fair per-photographer limit, and export. Judge gets an anonymised set with no photographer names, scorer gets the full thing.
-- **upload-portal** — lets members submit their own competition entries (title, name, image) instead of the organiser collecting them by hand. Admin reviews what came in, grouped by photographer, and can lock a competition, download it as a zip, or hand it straight off to comp-sheets. A GitHub-gated owner console sits above that — reset the admin/member passcodes, wipe the storage, see a log of what's happened — reachable from the "abueelo" link at the bottom of any page.
+### comp-sheets
 
-More apps can live in here later — see `packages/shared-bus` below.
+Upload a batch of entries, fix up any names it guessed wrong, set a fair per-photographer limit, and export. Judge gets an anonymised set with no photographer names, scorer gets the full thing. Runs entirely in the browser — nothing gets uploaded anywhere, it's all canvas and web workers renaming/resizing locally, and a zip comes out the other end with the images plus both score sheets.
+
+Drop in a folder or a batch of files:
+
+![upload step](docs/screenshots/upload.jpg)
+
+It guesses the photographer and title from each filename (`01_Author_Title.jpg` is the expected convention) and flags anything it's not sure about for a manual check before continuing:
 
 ![review step](docs/screenshots/review.jpg)
+
+Set a total image limit and a per-photographer cap so no one floods the competition, then export:
+
 ![settings step](docs/screenshots/settings.jpg)
+
+![export step](docs/screenshots/export.jpg)
+
+### upload-portal
+
+Lets members submit their own competition entries (title, name, image) instead of the organiser collecting them by hand. Admin reviews what came in, grouped by photographer, and can lock a competition, download it as a zip, or hand it straight off to comp-sheets. A GitHub-gated owner console sits above that — reset the admin/member passcodes, wipe the storage, see a log of what's happened — reachable from the "abueelo" link at the bottom of any page.
+
+More apps can live in here later — see `packages/shared-bus` below.
 
 ## how it's put together
 
