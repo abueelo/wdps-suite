@@ -26,6 +26,13 @@
   // One name for the whole session rather than re-typing it per image —
   // a member is almost always uploading their own batch in one sitting.
   let photographer = $state('');
+
+  // Requires a first AND last name — a bare first name isn't enough to
+  // credit someone in a competition, and this is the cheapest nudge
+  // toward getting both without maintaining a member roster.
+  function isFullName(name: string): boolean {
+    return name.trim().split(/\s+/).filter(Boolean).length >= 2;
+  }
   let rows = $state<Row[]>([]);
   let dragOver = $state(false);
   let dragging = $state<string | null>(null);
@@ -66,7 +73,8 @@
   // at all while the button sat disabled for a still-empty name field.
   let disabledReason = $derived.by(() => {
     if (submitting) return '';
-    if (!photographer.trim()) return 'type your name above first';
+    if (!photographer.trim()) return 'type your full name above first';
+    if (!isFullName(photographer)) return 'include your last name too';
     if (readyCount === 0) {
       if (untitledCount > 0) return `give ${untitledCount === 1 ? 'that image' : 'each image'} a title first`;
       return '';
@@ -138,7 +146,7 @@
   }
 
   async function uploadAll() {
-    if (!photographer.trim()) return;
+    if (!isFullName(photographer)) return;
     submitting = true;
     try {
       for (const row of rows) {
@@ -174,9 +182,10 @@
   <button type="button" class="btn back-link" onclick={onBack}>&larr; pick a different competition</button>
 
   <label class="field">
-    <span class="dim">your name</span>
+    <span class="field-label">your full name</span>
     <input type="text" bind:value={photographer} placeholder="Jane Doe" autocomplete="off" />
   </label>
+  <p class="dim name-hint">first and last name, so organisers know who to credit</p>
 
   <div
     class="dropzone"
@@ -256,7 +265,7 @@
     </ul>
 
     {#if disabledReason}<p class="warn upload-warn">{disabledReason}</p>{/if}
-    <button class="btn primary" onclick={uploadAll} disabled={submitting || readyCount === 0 || !photographer.trim()}>
+    <button class="btn primary" onclick={uploadAll} disabled={submitting || readyCount === 0 || !isFullName(photographer)}>
       {submitting ? 'uploading…' : `upload and submit ${readyCount} image${readyCount === 1 ? '' : 's'}`}
     </button>
     {#if doneCount > 0}<p class="ok">{doneCount} uploaded so far.</p>{/if}
@@ -283,6 +292,13 @@
   }
   .field input {
     width: var(--field-width);
+  }
+  .field-label {
+    font-weight: bold;
+  }
+  .name-hint {
+    margin-top: 0.35rem;
+    font-size: 0.85em;
   }
   .dropzone {
     border: 1px dashed var(--border);
