@@ -11,15 +11,7 @@
     onRequestDelete: (entry: Entry) => void;
   } = $props();
 
-  function gcd(a: number, b: number): number {
-    return b === 0 ? a : gcd(b, a % b);
-  }
-
-  let aspectRatio = $derived.by(() => {
-    if (!entry.width || !entry.height) return '—';
-    const d = gcd(entry.width, entry.height) || 1;
-    return `${entry.width / d}:${entry.height / d}`;
-  });
+  let resolution = $derived(entry.width && entry.height ? `${entry.width}×${entry.height}px` : '—');
 </script>
 
 <article class="card" class:excluded={entry.excluded}>
@@ -27,12 +19,20 @@
     <img src={entry.thumbnailUrl} alt="" loading="lazy" />
   </div>
   <p class="title">{entry.title}</p>
-  <p class="meta dim">{aspectRatio} · {entry.ext} · {entry.originalFilename}</p>
+  <p class="meta dim">{resolution} · {entry.ext}</p>
+  <p class="meta dim">{entry.originalFilename}</p>
   <p class="actions">
-    <button type="button" class="btn" onclick={() => onToggleExcluded(entry)}>
+    <button type="button" class="btn exclude-btn" onclick={() => onToggleExcluded(entry)}>
       {entry.excluded ? 'restore' : 'exclude'}
     </button>
-    <button type="button" class="btn danger-btn" onclick={() => onRequestDelete(entry)}>delete</button>
+    <button
+      type="button"
+      class="btn remove-btn danger-btn"
+      onclick={() => onRequestDelete(entry)}
+      aria-label="delete"
+    >
+      ×
+    </button>
   </p>
   {#if entry.excluded}<p class="warn">excluded</p>{/if}
 </article>
@@ -76,8 +76,19 @@
   }
   .actions {
     display: flex;
-    gap: 1ch;
+    align-items: center;
+    gap: 0.5ch;
     margin: 0.25rem 0 0;
+  }
+  .exclude-btn {
+    flex: 1;
+    min-width: 0;
+  }
+  .remove-btn {
+    flex: 0 0 auto;
+    font-size: 1.2em;
+    line-height: 1;
+    padding: 0.2em 0.6em;
   }
   .danger-btn:hover,
   .danger-btn:focus-visible {
