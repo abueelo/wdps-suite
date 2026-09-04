@@ -182,10 +182,10 @@
   <button type="button" class="btn back-link" onclick={onBack}>&larr; pick a different competition</button>
 
   <label class="field">
-    <span class="field-label">your full name</span>
+    <span>your <span class="field-label">full name</span></span>
     <input type="text" bind:value={photographer} placeholder="Jane Doe" autocomplete="off" />
   </label>
-  <p class="dim name-hint">first and last name, so organisers know who to credit</p>
+  <p class="dim name-hint">first and last name, so entries can be credited correctly</p>
 
   <div
     class="dropzone"
