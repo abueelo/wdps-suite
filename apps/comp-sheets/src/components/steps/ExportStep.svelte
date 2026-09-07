@@ -6,7 +6,7 @@
   import { computeCaps, isCapError, type PhotographerCount } from '../../lib/fairness/tierCap.js';
   import { buildCompetitionOrder } from '../../lib/order/competitionOrder.js';
   import { processJobs } from '../../lib/processing/workerPool.js';
-  import { buildScorerDoc, buildJudgeDoc, type ThumbnailData } from '../../lib/export/docxBuilder.js';
+  import type { ThumbnailData } from '../../lib/export/docxBuilder.js';
   import { streamExportZip } from '../../lib/export/zipBuilder.js';
   import { saveStreamedFile } from '../../lib/export/download.js';
   import { putPayload, compatibleApps, IMAGE_SET_TYPE } from '@wdps/shared-bus';
@@ -94,6 +94,11 @@
     }
 
     statusMessage = 'building score sheets…';
+    // Dynamically imported: `docx` is a hefty library only ever needed at
+    // this final step, so keeping it out of the static import graph keeps
+    // it out of the app's initial bundle — it only loads once someone
+    // actually reaches export.
+    const { buildScorerDoc, buildJudgeDoc } = await import('../../lib/export/docxBuilder.js');
     const docOpts = { competitionName, includeThumbnails: settingsStore.value.includeThumbnails, thumbnails };
     const [scorerDocBlob, judgeDocBlob] = await Promise.all([
       buildScorerDoc(usableOrder, docOpts),

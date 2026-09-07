@@ -66,25 +66,51 @@ function matchRoute(pathname) {
   return null;
 }
 
+// Belt-and-braces HTTPS enforcement. The zone's "Always Use HTTPS" setting
+// (SSL/TLS -> Edge Certificates in the Cloudflare dashboard) is what should
+// normally catch this before a request ever reaches the Worker, but that's
+// a dashboard toggle, not something this repo controls — so redirect here
+// too in case it's ever off, and set HSTS so browsers stop trying plain
+// HTTP against this host on their own.
+function enforceHttps(url) {
+  if (url.protocol !== 'http:') return null;
+  url.protocol = 'https:';
+  return Response.redirect(url.toString(), 301);
+}
+
+const HSTS = 'max-age=63072000; includeSubDomains; preload';
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    const httpsRedirect = enforceHttps(url);
+    if (httpsRedirect) return httpsRedirect;
+
+    let response;
     if (url.pathname.startsWith('/api/')) {
       const matched = matchRoute(url.pathname);
-      if (!matched) return new Response(JSON.stringify({ error: 'not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
-
-      const handler = matched.route[request.method];
-      if (!handler) return new Response(JSON.stringify({ error: 'method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
-
-      try {
-        return await handler({ request, env, params: matched.params, ctx });
-      } catch (err) {
-        console.error(err);
-        return new Response(JSON.stringify({ error: 'internal error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+      if (!matched) {
+        response = new Response(JSON.stringify({ error: 'not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+      } else {
+        const handler = matched.route[request.method];
+        if (!handler) {
+          response = new Response(JSON.stringify({ error: 'method not allowed' }), { status: 405, headers: { 'Content-Type': 'application/json' } });
+        } else {
+          try {
+            response = await handler({ request, env, params: matched.params, ctx });
+          } catch (err) {
+            console.error(err);
+            response = new Response(JSON.stringify({ error: 'internal error' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+          }
+        }
       }
+    } else {
+      response = await env.ASSETS.fetch(request);
     }
 
-    return env.ASSETS.fetch(request);
+    response = new Response(response.body, response);
+    response.headers.set('Strict-Transport-Security', HSTS);
+    return response;
   }
 };

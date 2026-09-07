@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Allow: /comp-sheets/
+Disallow: /upload-portal/
+Disallow: /api/
+
+Sitemap: https://wdps.russl.dev/sitemap.xml

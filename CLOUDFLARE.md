@@ -18,6 +18,7 @@ One-time setup to get `wdps.russl.dev` live on Cloudflare Pages, deploying autom
 1. In the new Pages project → **Custom domains** → **Set up a custom domain**.
 2. Enter `wdps.russl.dev`.
 3. Since `russl.dev` is already on Cloudflare DNS, the CNAME and SSL cert should provision themselves within a minute or two — no manual DNS record needed.
+4. `russl.dev` zone → **SSL/TLS** → **Edge Certificates** → confirm **Always Use HTTPS** is on. That's what redirects plain `http://wdps.russl.dev` at the edge; the Worker also does its own http→https redirect and sends an HSTS header as a fallback, but this toggle is the primary fix and it's a per-zone dashboard setting, not something in this repo.
 
 ## 3. Check the branch setup worked
 
