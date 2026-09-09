@@ -4,6 +4,7 @@
   import { decodeForUpload } from '../../lib/upload/thumbnail.js';
   import { guessTitle } from '../../lib/upload/guessTitle.js';
   import { uploadEntry } from '../../lib/api/client.js';
+  import { ConfirmModal } from '@wdps/shared-ui';
 
   let { competition, onBack }: { competition: Competition; onBack: () => void } = $props();
 
@@ -128,8 +129,12 @@
     if (e.dataTransfer?.files) await addFiles(Array.from(e.dataTransfer.files));
   }
 
-  function removeRow(id: string) {
-    rows = rows.filter((r) => r.id !== id);
+  let pendingRemove = $state<Row | null>(null);
+
+  function confirmRemoveRow() {
+    if (!pendingRemove) return;
+    rows = rows.filter((r) => r.id !== pendingRemove!.id);
+    pendingRemove = null;
   }
 
   // Row reordering, own drag state from the file drop zone above — this
@@ -257,7 +262,7 @@
           {:else if row.status === 'uploading'}
             <span class="dim row-status">uploading…</span>
           {:else}
-            <button type="button" class="btn remove-btn row-status" onclick={() => removeRow(row.id)} aria-label="remove">×</button>
+            <button type="button" class="btn remove-btn row-status" onclick={() => (pendingRemove = row)} aria-label="remove">×</button>
           {/if}
           {#if row.status === 'error'}<span class="danger row-error">{row.error}</span>{/if}
         </li>
@@ -271,6 +276,15 @@
     {#if doneCount > 0}<p class="ok">{doneCount} uploaded so far.</p>{/if}
   {/if}
 </section>
+
+{#if pendingRemove}
+  <ConfirmModal
+    message={`Remove "${pendingRemove.file.name}" from this upload? This can't be undone.`}
+    confirmLabel="remove"
+    onConfirm={confirmRemoveRow}
+    onCancel={() => (pendingRemove = null)}
+  />
+{/if}
 
 <style>
   section.panel {

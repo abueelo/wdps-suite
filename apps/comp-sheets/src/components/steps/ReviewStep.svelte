@@ -3,6 +3,7 @@
   import { findLikelyMatch } from '../../lib/parsing/nameMatcher.js';
   import { generatePreviewUrl } from '../../lib/upload/preview.js';
   import type { ImageRecord } from '../../lib/types.js';
+  import { ConfirmModal } from '@wdps/shared-ui';
 
   let { onNext, onBack }: { onNext: () => void; onBack: () => void } = $props();
 
@@ -55,8 +56,12 @@
     imagesStore.update(record.id, { photographer: name });
   }
 
-  function removeRecord(id: string) {
-    imagesStore.remove(id);
+  let pendingRemove = $state<ImageRecord | null>(null);
+
+  function confirmRemoveRecord() {
+    if (!pendingRemove) return;
+    imagesStore.remove(pendingRemove.id);
+    pendingRemove = null;
   }
 
   const confidenceLabel: Record<ImageRecord['confidence'], string> = {
@@ -127,7 +132,7 @@
               />
             </td>
             <td class={confidenceClass[record.confidence]}>{confidenceLabel[record.confidence]}</td>
-            <td><button class="link-btn danger remove-btn" onclick={() => removeRecord(record.id)} aria-label="remove image">×</button></td>
+            <td><button class="link-btn danger remove-btn" onclick={() => (pendingRemove = record)} aria-label="remove image">×</button></td>
           </tr>
         {/each}
       </tbody>
@@ -143,6 +148,15 @@
     <button class="btn primary" disabled={!allConfirmed} onclick={onNext}>continue to settings →</button>
   </div>
 </section>
+
+{#if pendingRemove}
+  <ConfirmModal
+    message={`Remove "${pendingRemove.originalName}" from this batch? This can't be undone.`}
+    confirmLabel="remove"
+    onConfirm={confirmRemoveRecord}
+    onCancel={() => (pendingRemove = null)}
+  />
+{/if}
 
 <style>
   .table-scroll {
