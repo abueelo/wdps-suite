@@ -155,7 +155,7 @@
   <header class="suite-header">
     <h1 class="name">presenter</h1>
     <div class="head-row">
-      <p class="tagline dim">run the competition night<span class="cursor" aria-hidden="true">█</span></p>
+      <p class="tagline dim">run the competition<span class="cursor" aria-hidden="true">█</span></p>
       <nav class="bracket-nav" aria-label="theme and suite">
         <a href="/"><span class="key" aria-hidden="true">[h]</span> wdps</a>
         <ThemeToggle />
