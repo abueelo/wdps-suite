@@ -34,7 +34,9 @@ interface ProjectManifest {
   version: number;
   scene: Scene;
   currentImageId: string | null;
-  revealOnDisplay: boolean;
+  revealTitle: boolean;
+  revealPhotographer: boolean;
+  revealFlashOnly: boolean;
   borderGuide: boolean;
   titleSlide: ManifestSlide;
   breakSlide: ManifestSlide;
@@ -71,7 +73,9 @@ export async function exportProjectFile(session: LiveSession): Promise<Blob> {
     version: MANIFEST_VERSION,
     scene: session.scene,
     currentImageId: session.currentImageId,
-    revealOnDisplay: session.revealOnDisplay,
+    revealTitle: session.revealTitle,
+    revealPhotographer: session.revealPhotographer,
+    revealFlashOnly: session.revealFlashOnly,
     borderGuide: session.borderGuide,
     titleSlide: await slideManifest(session.titleSlide, 'slides/title'),
     breakSlide: await slideManifest(session.breakSlide, 'slides/break'),
@@ -114,7 +118,9 @@ export async function importProjectFile(file: Blob): Promise<LiveSession> {
     images,
     scene: manifest.scene,
     currentImageId: manifest.currentImageId,
-    revealOnDisplay: manifest.revealOnDisplay,
+    revealTitle: manifest.revealTitle,
+    revealPhotographer: manifest.revealPhotographer,
+    revealFlashOnly: manifest.revealFlashOnly,
     borderGuide: manifest.borderGuide,
     titleSlide: readSlide(manifest.titleSlide),
     breakSlide: readSlide(manifest.breakSlide)

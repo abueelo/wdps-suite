@@ -35,7 +35,22 @@
     }
   });
 
+  // Whether the field has actually been edited since it last gained
+  // focus — gates the blur-commit below so just tabbing through without
+  // changing anything doesn't advance. Tracked by hand rather than
+  // trusting the native 'change' event: that only fires for a value
+  // change the browser considers a genuine user edit, which a
+  // programmatic value set + dispatched input event (how typing a digit
+  // with no field focused yet gets started, see App.svelte's
+  // startTypingScore) doesn't reliably count as in every browser.
+  let touchedSinceFocus = false;
+
+  function handleFocus() {
+    touchedSinceFocus = false;
+  }
+
   function handleInput(e: Event) {
+    touchedSinceFocus = true;
     const raw = (e.currentTarget as HTMLInputElement).value;
     if (raw === '') {
       onChange(null);
@@ -46,9 +61,14 @@
     onChange(Math.max(1, Math.min(20, n)));
   }
 
+  function handleBlur() {
+    if (touchedSinceFocus) onCommit?.();
+  }
+
   function handleKeydown(e: KeyboardEvent) {
-    // Enter commits the score the same way tabbing away does, without
-    // needing an extra click — blur() triggers the change handler below.
+    // Enter commits the same way tabbing away does — blur() below fires
+    // the actual commit, this just triggers it without leaving the field
+    // via Tab/click.
     if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur();
   }
 </script>
@@ -64,7 +84,8 @@
     placeholder="—"
     oninput={handleInput}
     onkeydown={handleKeydown}
-    onchange={() => onCommit?.()}
+    onfocus={handleFocus}
+    onblur={handleBlur}
   />
   <span class="dim">/ 20</span>
   {#if rating !== null}

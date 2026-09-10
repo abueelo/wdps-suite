@@ -7,6 +7,8 @@
   import { blobToDisplayUrl } from './lib/display/orientation.js';
   import type { PresenterImage } from './lib/types.js';
 
+  const FLASH_DURATION_MS = 4000;
+
   let session = $derived(sessionStore.current);
   let currentImage = $derived<PresenterImage | null>(session.images.find((i) => i.id === session.currentImageId) ?? null);
 
@@ -68,9 +70,61 @@
       if (url) URL.revokeObjectURL(url);
     };
   });
+
+  // In "flash" mode the caption only shows for a few seconds right after
+  // switching to a new image, rather than staying up the whole time —
+  // re-armed every time currentImage.id changes.
+  let flashVisible = $state(false);
+  $effect(() => {
+    const id = currentImage?.id;
+    if (!id || !session.revealFlashOnly) {
+      flashVisible = false;
+      return;
+    }
+    flashVisible = true;
+    const timer = setTimeout(() => {
+      flashVisible = false;
+    }, FLASH_DURATION_MS);
+    return () => clearTimeout(timer);
+  });
+
+  let captionShown = $derived(
+    (session.revealTitle || session.revealPhotographer) && (session.revealFlashOnly ? flashVisible : true)
+  );
+
+  // Best-effort auto-fullscreen already happens where this window gets
+  // opened (secondScreen.ts) — but the Fullscreen API can still refuse
+  // that depending on browser/timing. This is the fallback: a small
+  // hint that appears if fullscreen didn't take, and a click anywhere
+  // requests it as a genuine gesture on this document, which always
+  // works.
+  let showFullscreenHint = $state(false);
+
+  $effect(() => {
+    const timer = setTimeout(() => {
+      if (!document.fullscreenElement) showFullscreenHint = true;
+    }, 1000);
+    return () => clearTimeout(timer);
+  });
+
+  $effect(() => {
+    function handleChange() {
+      if (document.fullscreenElement) showFullscreenHint = false;
+    }
+    document.addEventListener('fullscreenchange', handleChange);
+    return () => document.removeEventListener('fullscreenchange', handleChange);
+  });
+
+  function handleStageClick() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.().catch(() => {});
+    }
+  }
 </script>
 
-<div class="stage">
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="stage" onclick={handleStageClick}>
   {#if activeScene === 'title'}
     {#if titleImageUrl}
       <img class="frame" class:bordered={session.borderGuide} src={titleImageUrl} alt="" />
@@ -85,12 +139,17 @@
     {/if}
   {:else if currentImage}
     <img class="frame" class:bordered={session.borderGuide} src={photoUrl} alt="" />
-    {#if session.revealOnDisplay}
+    {#if captionShown}
       <p class="caption">
-        {currentImage.title || '(untitled)'}
-        {#if currentImage.photographer}<span class="dim"> — {currentImage.photographer}</span>{/if}
+        {#if session.revealTitle}<span>{currentImage.title || '(untitled)'}</span>{/if}
+        {#if session.revealTitle && session.revealPhotographer}<span> — </span>{/if}
+        {#if session.revealPhotographer && currentImage.photographer}<span>{currentImage.photographer}</span>{/if}
       </p>
     {/if}
+  {/if}
+
+  {#if showFullscreenHint}
+    <p class="fullscreen-hint">click to fill the screen</p>
   {/if}
 </div>
 
@@ -131,15 +190,25 @@
   }
   .caption {
     position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 2vh;
-    text-align: center;
+    left: 50%;
+    bottom: 4vh;
+    transform: translateX(-50%);
+    background: #000;
+    color: #fff;
+    padding: 0.5em 1em;
     font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, "Liberation Mono", monospace;
-    color: #b8b5a9;
     font-size: 1.5vw;
+    white-space: nowrap;
   }
-  .caption .dim {
+  .fullscreen-hint {
+    position: fixed;
+    top: 1vh;
+    right: 1vw;
+    background: #000;
     color: #6e6b60;
+    padding: 0.3em 0.7em;
+    font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 0.85rem;
+    cursor: pointer;
   }
 </style>

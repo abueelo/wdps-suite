@@ -4,7 +4,7 @@
   import { sessionStore } from './lib/session/store.svelte.js';
   import { clearSession as clearStoredSession } from './lib/session/db.js';
   import { checkOwnerAuth } from './lib/auth/ownerAuth.js';
-  import { openDisplayWindow } from './lib/display/secondScreen.js';
+  import { openDisplayWindow, detectExternalScreens, type ScreenChoice } from './lib/display/secondScreen.js';
   import { emptySession } from './lib/types.js';
   import type { PresenterImage, LiveSession, SlideConfig, Scene } from './lib/types.js';
   import AuthGate from './components/AuthGate.svelte';
@@ -22,6 +22,11 @@
 
   let showHeldOnly = $state(false);
   let displayStatus = $state('');
+  let presenting = $state(false);
+  let displayWindowRef: Window | null = null;
+  let screenChoices = $state<ScreenChoice[]>([]);
+  let screensChecked = $state(false);
+  let selectedScreenIndex = $state(0);
   let ratingInputEl = $state<HTMLInputElement | undefined>(undefined);
   let exportPanelRef = $state<{ saveProject: () => Promise<void>; exportResults: () => Promise<void> } | undefined>(undefined);
   let confirmClear = $state(false);
@@ -111,15 +116,36 @@
     });
   }
 
+  // Pressing the same slide's key/button twice is "show it, then put it
+  // away again" — flips back to the current photo rather than just
+  // sitting on the slide with no easy way back short of [l].
+  function toggleScene(scene: 'title' | 'break') {
+    void sessionStore.update((s) => {
+      s.scene = s.scene === scene ? 'photo' : scene;
+    });
+  }
+
   function updateSlide(which: 'titleSlide' | 'breakSlide', patch: Partial<SlideConfig>) {
     void sessionStore.update((s) => {
       Object.assign(s[which], patch);
     });
   }
 
-  function toggleReveal() {
+  function toggleRevealTitle() {
     void sessionStore.update((s) => {
-      s.revealOnDisplay = !s.revealOnDisplay;
+      s.revealTitle = !s.revealTitle;
+    });
+  }
+
+  function toggleRevealPhotographer() {
+    void sessionStore.update((s) => {
+      s.revealPhotographer = !s.revealPhotographer;
+    });
+  }
+
+  function toggleRevealFlashOnly() {
+    void sessionStore.update((s) => {
+      s.revealFlashOnly = !s.revealFlashOnly;
     });
   }
 
@@ -143,17 +169,53 @@
     await sessionStore.replace(next);
   }
 
-  async function openDisplay() {
+  // First click: if there's more than one candidate external screen,
+  // just lists them (via a user-gesture-gated permission check) and
+  // waits for a choice rather than guessing — otherwise it's unambiguous
+  // and opens straight away. Second click (once presenting) stops.
+  async function handlePresentClick() {
+    if (presenting) {
+      displayWindowRef?.close();
+      displayWindowRef = null;
+      presenting = false;
+      displayStatus = '';
+      return;
+    }
+
+    if (!screensChecked) {
+      screenChoices = await detectExternalScreens();
+      screensChecked = true;
+      if (screenChoices.length > 1) return; // presenter picks one, then clicks present again
+    }
+
     try {
-      const result = await openDisplayWindow('/presenter/display.html');
+      const chosen = screenChoices[selectedScreenIndex];
+      const result = await openDisplayWindow('/presenter/display.html', chosen?.screen);
+      displayWindowRef = result.window;
+      presenting = true;
       displayStatus =
         result.mode === 'auto'
-          ? 'display window opened on the second screen.'
+          ? `presenting on ${chosen ? chosen.label : 'the second screen'}.`
           : 'display window opened — drag it to the projector and press F11 to fullscreen it.';
     } catch (err) {
       displayStatus = err instanceof Error ? err.message : 'could not open the display window';
     }
   }
+
+  // Notices if the display window was closed some other way (its own
+  // close button, alt-F4, ...) so "present" doesn't stay stuck saying
+  // "stop presenting" for a window that's already gone.
+  $effect(() => {
+    if (!presenting) return;
+    const interval = setInterval(() => {
+      if (displayWindowRef?.closed) {
+        displayWindowRef = null;
+        presenting = false;
+        displayStatus = '';
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  });
 
   async function clearSession() {
     await sessionStore.replace(emptySession());
@@ -203,13 +265,15 @@
       ArrowUp: () => step(-1),
       k: () => toggleHold(),
       f: () => (showHeldOnly = !showHeldOnly),
-      i: () => setScene('title'),
-      b: () => setScene('break'),
+      i: () => toggleScene('title'),
+      b: () => toggleScene('break'),
       l: () => setScene('photo'),
-      v: () => toggleReveal(),
+      v: () => toggleRevealTitle(),
+      p: () => toggleRevealPhotographer(),
+      x: () => toggleRevealFlashOnly(),
       w: () => toggleBorder(),
       d: () => {
-        void openDisplay();
+        void handlePresentClick();
       },
       r: () => ratingInputEl?.focus(),
       s: () => {
@@ -243,6 +307,32 @@
   {:else}
     <p class="warn dev-note">[ under development — expect rough edges, keep a backup plan for the night ]</p>
 
+    <div class="present-row">
+      <button type="button" class="btn primary present-btn" class:danger={presenting} onclick={() => void handlePresentClick()}>
+        <span class="key" aria-hidden="true">[d]</span> {presenting ? 'stop presenting' : 'present'}
+      </button>
+      {#if screensChecked && screenChoices.length > 1 && !presenting}
+        <select bind:value={selectedScreenIndex} aria-label="which screen to present on">
+          {#each screenChoices as choice, i}
+            <option value={i}>{choice.label}</option>
+          {/each}
+        </select>
+      {/if}
+      {#if displayStatus}<span class="dim">{displayStatus}</span>{/if}
+    </div>
+
+    <div class="scene-row">
+      <button type="button" class="btn" class:primary={session.scene === 'title'} disabled={!session.titleSlide.enabled} onclick={() => toggleScene('title')}>
+        <span class="key" aria-hidden="true">[i]</span> title slide
+      </button>
+      <button type="button" class="btn" class:primary={session.scene === 'break'} disabled={!session.breakSlide.enabled} onclick={() => toggleScene('break')}>
+        <span class="key" aria-hidden="true">[b]</span> break slide
+      </button>
+      <button type="button" class="btn" class:primary={session.scene === 'photo'} disabled={session.images.length === 0} onclick={() => setScene('photo')}>
+        <span class="key" aria-hidden="true">[l]</span> current image
+      </button>
+    </div>
+
     {#snippet slidesDetails()}
       <details class="panel">
         <summary><span class="bracket" aria-hidden="true">[ </span>slides<span class="bracket" aria-hidden="true"> ]</span></summary>
@@ -253,7 +343,7 @@
           active={session.scene === 'title'}
           showKey="i"
           onUpdate={(p) => updateSlide('titleSlide', p)}
-          onShowNow={() => setScene('title')}
+          onShowNow={() => toggleScene('title')}
         />
         <Divider />
         <SlideEditor
@@ -262,14 +352,8 @@
           active={session.scene === 'break'}
           showKey="b"
           onUpdate={(p) => updateSlide('breakSlide', p)}
-          onShowNow={() => setScene('break')}
+          onShowNow={() => toggleScene('break')}
         />
-        {#if session.images.length > 0}
-          <Divider />
-          <button type="button" class="btn" class:primary={session.scene === 'photo'} onclick={() => setScene('photo')}>
-            <span class="key" aria-hidden="true">[l]</span> {session.scene === 'photo' ? 'showing current image' : 'back to current image'}
-          </button>
-        {/if}
       </details>
     {/snippet}
 
@@ -277,12 +361,14 @@
       <IntakeScreen {onImagesReady} {onProjectImported} />
       {@render slidesDetails()}
       <DisplaySettingsPanel
-        revealOnDisplay={session.revealOnDisplay}
+        revealTitle={session.revealTitle}
+        revealPhotographer={session.revealPhotographer}
+        revealFlashOnly={session.revealFlashOnly}
         borderGuide={session.borderGuide}
-        {displayStatus}
-        onToggleReveal={toggleReveal}
+        onToggleRevealTitle={toggleRevealTitle}
+        onToggleRevealPhotographer={toggleRevealPhotographer}
+        onToggleRevealFlashOnly={toggleRevealFlashOnly}
         onToggleBorder={toggleBorder}
-        onOpenDisplay={openDisplay}
       />
     {:else}
       <div class="workspace">
@@ -320,12 +406,14 @@
           {@render slidesDetails()}
 
           <DisplaySettingsPanel
-            revealOnDisplay={session.revealOnDisplay}
+            revealTitle={session.revealTitle}
+            revealPhotographer={session.revealPhotographer}
+            revealFlashOnly={session.revealFlashOnly}
             borderGuide={session.borderGuide}
-            {displayStatus}
-            onToggleReveal={toggleReveal}
+            onToggleRevealTitle={toggleRevealTitle}
+            onToggleRevealPhotographer={toggleRevealPhotographer}
+            onToggleRevealFlashOnly={toggleRevealFlashOnly}
             onToggleBorder={toggleBorder}
-            onOpenDisplay={openDisplay}
           />
 
           <ExportPanel {session} bind:this={exportPanelRef} />
@@ -353,6 +441,32 @@
   }
   .dev-note {
     margin-top: 1.5rem;
+  }
+  .present-row {
+    margin-top: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .present-btn {
+    font-size: 1.05em;
+    padding: 0.55em 1.4em;
+  }
+  .present-btn.danger {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+  .present-btn.danger:hover,
+  .present-btn.danger:focus-visible {
+    background: var(--danger);
+    color: var(--bg);
+  }
+  .scene-row {
+    margin-top: 1rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
   }
   .workspace {
     display: flex;

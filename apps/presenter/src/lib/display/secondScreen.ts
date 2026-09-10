@@ -1,10 +1,10 @@
 // Opens display.html on a second screen. Tries the Window Management API
-// (getScreenDetails) first — auto-places and fullscreens a window on
-// whichever screen isn't the current one — and falls back to a plain
-// popup the presenter drags to the projector and fullscreens themselves
-// (F11) when that API isn't available, its permission is refused, or
-// anything else about the auto path goes wrong. The fallback always
-// works, so the auto path can only improve on it, never block it.
+// (getScreenDetails) first — auto-places and fullscreens a window on a
+// chosen screen — and falls back to a plain popup the presenter drags to
+// the projector and fullscreens themselves (F11) when that API isn't
+// available, its permission is refused, or anything else about the auto
+// path goes wrong. The fallback always works, so the auto path can only
+// improve on it, never block it.
 //
 // getScreenDetails() is still an experimental API with no stable TS
 // lib.dom types, hence the `any` here rather than hand-rolled ambient
@@ -12,28 +12,78 @@
 
 export type SecondScreenMode = 'auto' | 'manual';
 
-export async function openDisplayWindow(url: string): Promise<{ mode: SecondScreenMode; window: Window }> {
-  const win = window as unknown as { getScreenDetails?: () => Promise<any> };
+export interface ScreenChoice {
+  screen: any;
+  label: string;
+}
 
-  if (typeof win.getScreenDetails === 'function') {
+// Always pass a features string with explicit dimensions — without one,
+// Chrome/Firefox open the URL as a new tab in this window rather than a
+// separate OS window, which defeats the point (nothing to drag onto the
+// projector). Manual mode doesn't know the target screen's size, so it
+// just gets a reasonable fixed window instead of a real screen's bounds.
+const MANUAL_FEATURES = 'width=1024,height=768,left=80,top=80';
+
+function getScreenDetailsApi(): (() => Promise<any>) | undefined {
+  return (window as unknown as { getScreenDetails?: () => Promise<any> }).getScreenDetails;
+}
+
+/**
+ * Lists every screen other than the one this window is currently on.
+ * Must be called from a user gesture (a click handler) — the browser's
+ * one-time "see your screens?" permission prompt needs that, same as
+ * the rest of the Window Management API. Returns [] if the API isn't
+ * available or the permission is refused, so callers can fall back to
+ * just opening a plain popup without asking anything first.
+ */
+export async function detectExternalScreens(): Promise<ScreenChoice[]> {
+  const getScreenDetails = getScreenDetailsApi();
+  if (!getScreenDetails) return [];
+  try {
+    const details = await getScreenDetails();
+    return details.screens
+      .filter((s: any) => s !== details.currentScreen)
+      .map((s: any) => ({
+        screen: s,
+        label: `${s.width}×${s.height}${s.isPrimary ? ' — primary' : ''} at (${s.left}, ${s.top})`
+      }));
+  } catch {
+    return [];
+  }
+}
+
+// Fullscreen has to be requested synchronously, in the same tick as the
+// click that opened the window — waiting for the popup's 'load' event
+// (as this used to) loses the user-activation window Chrome requires,
+// and the request is silently refused. Calling it immediately after
+// open()/moveTo()/resizeTo(), before anything is awaited, is what
+// actually works.
+function tryFullscreen(win: Window) {
+  try {
+    win.document.documentElement.requestFullscreen?.().catch(() => {});
+  } catch {
+    // ignored — display.html has its own click-to-fullscreen fallback
+    // for whenever the browser refuses this regardless.
+  }
+}
+
+/** Opens display.html, placed on `screen` if given (from detectExternalScreens), otherwise a plain popup. */
+export async function openDisplayWindow(url: string, screen?: any): Promise<{ mode: SecondScreenMode; window: Window }> {
+  if (screen) {
     try {
-      const screenDetails = await win.getScreenDetails();
-      const target = screenDetails.screens.find((s: any) => s !== screenDetails.currentScreen) ?? screenDetails.currentScreen;
-      const features = `left=${target.availLeft},top=${target.availTop},width=${target.availWidth},height=${target.availHeight}`;
+      const features = `left=${screen.availLeft},top=${screen.availTop},width=${screen.availWidth},height=${screen.availHeight}`;
       const opened = window.open(url, 'wdps-presenter-display', features);
       if (!opened) throw new Error('popup blocked');
-      opened.addEventListener('load', () => {
-        opened.moveTo(target.availLeft, target.availTop);
-        opened.resizeTo(target.availWidth, target.availHeight);
-        opened.document.documentElement.requestFullscreen?.().catch(() => {});
-      });
+      opened.moveTo(screen.availLeft, screen.availTop);
+      opened.resizeTo(screen.availWidth, screen.availHeight);
+      tryFullscreen(opened);
       return { mode: 'auto', window: opened };
     } catch {
       // fall through to the manual popup below
     }
   }
 
-  const opened = window.open(url, 'wdps-presenter-display');
+  const opened = window.open(url, 'wdps-presenter-display', MANUAL_FEATURES);
   if (!opened) throw new Error('popup blocked — allow popups for this site to open the display window');
   return { mode: 'manual', window: opened };
 }

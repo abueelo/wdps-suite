@@ -23,7 +23,11 @@ export interface LiveSession {
   images: PresenterImage[];
   scene: Scene;
   currentImageId: string | null;
-  revealOnDisplay: boolean;
+  /** Independent toggles — title and photographer can be revealed separately. */
+  revealTitle: boolean;
+  revealPhotographer: boolean;
+  /** When on, a revealed caption only shows for a few seconds after switching images, instead of staying up. */
+  revealFlashOnly: boolean;
   borderGuide: boolean;
   titleSlide: SlideConfig;
   breakSlide: SlideConfig;
@@ -34,7 +38,9 @@ export function emptySession(): LiveSession {
     images: [],
     scene: 'title',
     currentImageId: null,
-    revealOnDisplay: false,
+    revealTitle: false,
+    revealPhotographer: false,
+    revealFlashOnly: false,
     borderGuide: false,
     titleSlide: { enabled: true, heading: 'wdps' },
     breakSlide: { enabled: false }

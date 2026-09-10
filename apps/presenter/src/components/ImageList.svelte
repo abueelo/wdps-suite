@@ -51,12 +51,14 @@
     gap: 0.15rem;
     max-height: 28rem;
     overflow-y: auto;
+    overflow-x: hidden;
     margin-top: 0.75rem;
   }
   .row {
     display: flex;
-    align-items: center;
-    gap: 1ch;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.15em 1ch;
     width: 100%;
     text-align: left;
     font: inherit;
@@ -76,10 +78,11 @@
     color: var(--amber);
   }
   .name {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    /* Full title, never truncated — the presenter needs to be able to
+       read it out as-is, so it wraps onto another line rather than
+       hiding anything behind an ellipsis. */
+    flex: 1 1 auto;
+    min-width: 8ch;
   }
   .photographer {
     flex-shrink: 0;
