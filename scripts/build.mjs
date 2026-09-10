@@ -17,7 +17,8 @@ const apps = [
   { name: 'hub', dir: 'apps/hub', outSubdir: '' },
   { name: 'comp-sheets', dir: 'apps/comp-sheets', outSubdir: 'comp-sheets' },
   { name: 'upload-portal', dir: 'apps/upload-portal', outSubdir: 'upload-portal' },
-  { name: 'presenter', dir: 'apps/presenter', outSubdir: 'presenter' }
+  { name: 'presenter', dir: 'apps/presenter', outSubdir: 'presenter' },
+  { name: 'knockout', dir: 'apps/knockout', outSubdir: 'knockout' }
 ];
 
 rmSync(distRoot, { recursive: true, force: true });

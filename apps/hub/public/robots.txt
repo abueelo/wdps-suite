@@ -3,6 +3,7 @@ Allow: /
 Allow: /comp-sheets/
 Disallow: /upload-portal/
 Disallow: /presenter/
+Disallow: /knockout/
 Disallow: /api/
 
 Sitemap: https://wdps.russl.dev/sitemap.xml
