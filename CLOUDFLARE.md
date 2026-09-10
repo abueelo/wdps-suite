@@ -1,29 +1,29 @@
 # Cloudflare setup
 
-One-time setup to get `wdps.russl.dev` live on Cloudflare Pages, deploying automatically from GitHub.
+One-time setup to get `wdps.russl.dev` live on Cloudflare, deploying through GitHub Actions on push to `main` — same approach as the portfolio site this suite's look is lifted from. This project is a plain Worker with static assets under Cloudflare's unified Workers & Pages model, not a classic Pages project (that's why `worker.js` exists as an explicit router and why the KV/R2 bindings below are declared directly in `wrangler.jsonc` rather than through a dashboard binding UI), so deploying it is a `wrangler deploy`, not a Pages-specific action.
 
 ## 1. Create the project
 
-1. Cloudflare dashboard → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**.
-2. Pick the `abueelo/wdps-suite` repo, authorising Cloudflare's GitHub app if it asks.
-3. Build settings:
-   - **Production branch**: `main`
-   - **Build command**: `npm run build`
-   - **Deploy command**: `npx wrangler deploy` — important, this is not what Cloudflare defaults to. This project ends up as a plain Worker with static assets under Cloudflare's unified Workers & Pages model, not a classic Pages project, and a couple of the classic Pages behaviours (Pages Functions' automatic `functions/` routing, the dashboard's binding UI) just don't apply to it — that's why `worker.js` exists as an explicit router and why the KV/R2 bindings are declared directly in `wrangler.jsonc` rather than through the dashboard. If the build settings ever default to `npx wrangler versions upload` or `npx wrangler pages deploy` instead, fix it back to plain `wrangler deploy` in Settings → Builds.
-4. Add an environment variable `NODE_VERSION` = `20` (Cloudflare's default build image runs an older Node than this needs).
-5. Save and deploy. First build takes a couple of minutes.
+Deploys go through GitHub Actions (`.github/workflows/deploy.yml`) on push to `main` — don't use the dashboard's **Connect to Git**, that sets up a competing pipeline that'll fight the workflow over which deploy is current.
+
+1. `npx wrangler login`, then from the repo root: `npm run build && npx wrangler deploy`. This both creates the Worker (named `wdps-suite`, from `wrangler.jsonc`) and deploys it for the first time — after this it exists under **Workers & Pages** in the dashboard even though nothing was clicked there.
+2. Grab a Cloudflare API token (the "Edit Cloudflare Workers" template covers it) and your account id (right sidebar of the dashboard).
+3. Add both as repo secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
+4. Push to `main`, or just run the workflow manually, to confirm it deploys on its own from here on.
+
+Node version for the build is pinned in the workflow itself (`actions/setup-node`, currently 20) — nothing to set in a Cloudflare build-settings screen, since Cloudflare isn't doing the building anymore.
 
 ## 2. Custom domain
 
-1. In the new Pages project → **Custom domains** → **Set up a custom domain**.
+1. In the Worker's dashboard page → **Settings** → **Domains & Routes** → **Add** → **Custom Domain**.
 2. Enter `wdps.russl.dev`.
 3. Since `russl.dev` is already on Cloudflare DNS, the CNAME and SSL cert should provision themselves within a minute or two — no manual DNS record needed.
 4. `russl.dev` zone → **SSL/TLS** → **Edge Certificates** → confirm **Always Use HTTPS** is on. That's what redirects plain `http://wdps.russl.dev` at the edge; the Worker also does its own http→https redirect and sends an HSTS header as a fallback, but this toggle is the primary fix and it's a per-zone dashboard setting, not something in this repo.
 
 ## 3. Check the branch setup worked
 
-- Push to `test` → a build runs and shows up under the project's **Deployments** tab as a new "version" (not tagged production) — check there rather than expecting a `*.pages.dev` preview URL, which is a classic-Pages-only thing that doesn't apply here.
-- Merge `test` into `main` → that becomes the active deployment at `wdps.russl.dev`.
+- Push to `test` → nothing deploys (the workflow only triggers on `main`). Use `npm run build` + `npm run dev:*` locally, or `wrangler dev`, to check things before merging.
+- Merge `test` into `main` → the Action runs and that becomes the live deployment at `wdps.russl.dev`. Check the **Actions** tab for the run rather than a Cloudflare deployments list.
 
 That split is deliberate: `main` is production, so it only moves when a merge is actually approved, not on every commit.
 
@@ -35,7 +35,7 @@ Unlike a classic Pages project, the bindings for these live in `wrangler.jsonc`,
 
 1. **KV**: dashboard → **Storage & Databases** → **KV** → create a namespace. If you name it anything other than `wdps-upload-portal`, update the `id` under `kv_namespaces` in `wrangler.jsonc` to match (`npx wrangler kv namespace list` prints the id).
 2. **R2**: dashboard → **R2** → create a bucket named `wdps-upload-portal-images` (or update `bucket_name` under `r2_buckets` in `wrangler.jsonc` to whatever you called it).
-3. **Secrets**: these are runtime secrets, not build ones — the Worker reads them off `env` while handling a request, long after any build step has finished. dashboard → the project → **Settings** → top-level **Variables and secrets** (the *first* item in that left sidebar, not the one under the **Builds** section further down — that one only holds build-time stuff like `NODE_VERSION`, from step 1.4, and a Worker never sees it). Or skip the dashboard entirely: `npx wrangler secret put <NAME>` from a terminal logged in via `wrangler login`. Add these:
+3. **Secrets**: runtime secrets, not the repo secrets from step 1 — those two (`CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`) only let GitHub Actions deploy the Worker, they're never visible to it at request time. These are different: dashboard → the Worker → **Settings** → **Variables and secrets**. Or skip the dashboard entirely: `npx wrangler secret put <NAME>` from a terminal logged in via `wrangler login`. Add these:
    - `SESSION_SECRET` — any long random string (`openssl rand -hex 32`)
    - `ADMIN_PASSCODE` — the passcode whoever's running the competition uses to get into `/upload-portal/admin.html`
    - `MEMBER_PASSCODE` — not enforced yet (the member gate defaults off, flip it on from the admin settings panel once this is set)
@@ -56,4 +56,4 @@ For local dev, a second OAuth App pointed at `http://localhost:8787` / `http://l
 ## notes
 
 - Every app except upload-portal is a plain static build — everything else in the suite runs client-side in the visitor's browser, nothing uploaded anywhere.
-- If a build fails on an unrelated package script, check the `NODE_VERSION` env var landed — Cloudflare's build image defaults to something older than the Svelte/Vite toolchain wants.
+- If the Action's build step fails on an unrelated package script, check the Node version in `.github/workflows/deploy.yml` — the Svelte/Vite toolchain here wants 18.17+.
