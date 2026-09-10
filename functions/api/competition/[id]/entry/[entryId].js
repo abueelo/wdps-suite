@@ -32,11 +32,15 @@ export async function onRequestPatch({ request, env, params }) {
 }
 
 export async function onRequestDelete({ request, env, params }) {
-  // Admin can delete anything, any time. A non-admin caller can only take
-  // back their own entry (matched by the name they typed, same as GET
-  // .../entries) and only while the competition is still open — once it's
-  // locked for judging, entries are frozen the same way new uploads are.
-  const admin = await requireAdmin(request, env);
+  // Same rule as GET .../entries: whether this is a self-service removal
+  // or a full admin delete is decided by whether a photographer name was
+  // supplied, not by whether the caller also happens to hold an admin
+  // session — the member upload page always sends a name and always gets
+  // the name+status checks, even in a browser that's also logged in as
+  // admin. Only a request with no name at all (the admin panel) gets the
+  // unrestricted delete-anything-any-time behaviour.
+  const rawPhotographer = new URL(request.url).searchParams.get('photographer');
+  const admin = rawPhotographer === null && (await requireAdmin(request, env));
   if (!admin && !(await requireMemberOrAdmin(request, env))) {
     return json({ error: 'not authorised' }, { status: 401 });
   }
@@ -54,7 +58,7 @@ export async function onRequestDelete({ request, env, params }) {
 
   let selfRemoved = false;
   if (!admin) {
-    const photographer = new URL(request.url).searchParams.get('photographer') || '';
+    const photographer = rawPhotographer || '';
     if (!samePhotographer(entry.photographer, photographer)) {
       return json({ error: 'not authorised' }, { status: 403 });
     }

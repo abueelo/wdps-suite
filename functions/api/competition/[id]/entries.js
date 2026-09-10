@@ -29,20 +29,24 @@ async function loadCompetitions(env) {
 }
 
 export async function onRequestGet({ request, env, params }) {
-  // Admin sees every entry. A non-admin caller only ever sees the entries
-  // matching a photographer name they supply — there's no per-member login
-  // to scope this by, so the typed name is the only handle a member has on
-  // "my uploads".
-  const admin = await requireAdmin(request, env);
+  // Whether this is the "my uploads" view or the admin's full view is
+  // decided by whether a photographer name was asked for — not by whether
+  // the caller happens to also hold an admin session. Otherwise someone
+  // with an admin session active in the same browser (e.g. while testing)
+  // would see everyone's entries on the member upload page too, since that
+  // request would satisfy requireAdmin without ever passing a name.
+  const rawPhotographer = new URL(request.url).searchParams.get('photographer');
   let photographer = null;
-  if (!admin) {
+  if (rawPhotographer !== null) {
     if (!(await requireMemberOrAdmin(request, env))) {
       return json({ error: 'not authorised' }, { status: 401 });
     }
-    photographer = new URL(request.url).searchParams.get('photographer')?.trim().slice(0, PHOTOGRAPHER_MAX_LEN) || '';
+    photographer = rawPhotographer.trim().slice(0, PHOTOGRAPHER_MAX_LEN);
     if (!photographer) {
       return json({ error: 'photographer is required' }, { status: 400 });
     }
+  } else if (!(await requireAdmin(request, env))) {
+    return json({ error: 'not authorised' }, { status: 401 });
   }
   if (!validId(params.id)) {
     return json({ error: 'invalid id' }, { status: 400 });
@@ -51,7 +55,7 @@ export async function onRequestGet({ request, env, params }) {
   if (!competition) return json({ error: 'not found' }, { status: 404 });
 
   let entries = (await env.COMPETITIONS_KV.get(entriesKeyFor(params.id), 'json')) || [];
-  if (!admin) {
+  if (photographer !== null) {
     entries = entries.filter((e) => samePhotographer(e.photographer, photographer));
   }
   const withUrls = entries.map((e) => ({
@@ -94,7 +98,7 @@ export async function onRequestPost({ request, env, params }) {
   const height = Number(form.get('height'));
 
   if (!(original instanceof Blob) || original.size === 0 || original.size > MAX_ORIGINAL_BYTES) {
-    return json({ error: `original file must be between 1 byte and ${MAX_ORIGINAL_BYTES / (1024 * 1024)}MB` }, { status: 400 });
+    return json({ error: `image must be just under ${MAX_ORIGINAL_BYTES / (1024 * 1024)}MB` }, { status: 400 });
   }
   if (!(thumbnail instanceof Blob) || thumbnail.size === 0 || thumbnail.size > MAX_THUMBNAIL_BYTES) {
     return json({ error: 'missing or oversized thumbnail' }, { status: 400 });
