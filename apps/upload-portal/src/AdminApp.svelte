@@ -52,7 +52,9 @@
 
 <div class="page">
   <header class="suite-header">
-    <h1 class="name">upload-portal admin</h1>
+    <pre class="name" aria-hidden="true" style="--banner-cols: 49;"> █ █ █▀█ █   █▀█ ▄▀▄ █▀▄  █▀█ █▀█ █▀█ ▀█▀ ▄▀▄ █    ▄▀▄ █▀▄ █▀▄▀█ █ █▄█
+ █▄█ █▀▀ █▄▄ █▄█ █▀█ █▄▀  █▀▀ █▄█ █▀▄  █  █▀█ █▄▄  █▀█ █▄▀ █ ▀ █ █ █▀█</pre>
+    <h1 class="visually-hidden">upload-portal admin</h1>
     <div class="head-row">
       <p class="tagline dim">review entries, manage competitions<span class="cursor" aria-hidden="true">█</span></p>
       <nav class="bracket-nav" aria-label="theme and account">
@@ -92,11 +94,6 @@
 </div>
 
 <style>
-  .name {
-    font-size: 1.5rem;
-    letter-spacing: 0.05em;
-    margin: 0;
-  }
   .tagline {
     margin-top: 0.75rem;
   }

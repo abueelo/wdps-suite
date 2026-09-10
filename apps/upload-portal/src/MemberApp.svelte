@@ -50,7 +50,9 @@
 
 <div class="page">
   <header class="suite-header">
-    <h1 class="name">upload-portal</h1>
+    <pre class="name" aria-hidden="true" style="--banner-cols: 34;"> █ █ █▀█ █   █▀█ ▄▀▄ █▀▄  █▀█ █▀█ █▀█ ▀█▀ ▄▀▄ █
+ █▄█ █▀▀ █▄▄ █▄█ █▀█ █▄▀  █▀▀ █▄█ █▀▄  █  █▀█ █▄▄</pre>
+    <h1 class="visually-hidden">upload-portal</h1>
     <div class="head-row">
       <p class="tagline dim">submit your competition entries<span class="cursor" aria-hidden="true">█</span></p>
       <nav class="bracket-nav" aria-label="theme and admin">
@@ -79,11 +81,6 @@
 </div>
 
 <style>
-  .name {
-    font-size: 1.75rem;
-    letter-spacing: 0.05em;
-    margin: 0;
-  }
   .tagline {
     margin-top: 0.75rem;
   }
