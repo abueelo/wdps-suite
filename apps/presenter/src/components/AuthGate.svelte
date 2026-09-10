@@ -15,4 +15,11 @@
   .login-row {
     margin-top: 1.25rem;
   }
+
+  /* This panel isn't a clickable/collapsible affordance like other
+     .panel uses across the suite — it's just a static message, so skip
+     the shared hover highlight. */
+  .panel:hover {
+    border-color: var(--border);
+  }
 </style>

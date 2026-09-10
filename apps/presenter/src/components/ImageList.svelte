@@ -6,16 +6,22 @@
     images,
     currentImageId,
     showHeldOnly,
+    sortByScore,
     onSelect
   }: {
     images: PresenterImage[];
     currentImageId: string | null;
     showHeldOnly: boolean;
+    sortByScore: boolean;
     onSelect: (id: string) => void;
   } = $props();
 
+  // Best-to-worst when sorted by score — unrated images sink to the
+  // bottom rather than being sorted as if they scored a 0.
   let visible = $derived(
-    [...images].sort((a, b) => a.order - b.order).filter((img) => !showHeldOnly || img.held)
+    [...images]
+      .sort((a, b) => (sortByScore ? (b.rating ?? -1) - (a.rating ?? -1) : a.order - b.order))
+      .filter((img) => !showHeldOnly || img.held)
   );
 </script>
 

@@ -21,6 +21,7 @@
   });
 
   let showHeldOnly = $state(false);
+  let sortByScore = $state(false);
   let displayStatus = $state('');
   let presenting = $state(false);
   let displayWindowRef: Window | null = null;
@@ -42,7 +43,10 @@
   );
 
   function visibleOrdered(): PresenterImage[] {
-    return [...session.images].sort((a, b) => a.order - b.order).filter((i) => !showHeldOnly || i.held);
+    const sorted = sortByScore
+      ? [...session.images].sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1))
+      : [...session.images].sort((a, b) => a.order - b.order);
+    return sorted.filter((i) => !showHeldOnly || i.held);
   }
 
   function selectImage(id: string) {
@@ -50,6 +54,16 @@
       s.currentImageId = id;
       s.scene = 'photo';
     });
+  }
+
+  // Jumps straight to the highest-rated image — for revealing the
+  // winner at the end of the night without hunting through the list.
+  // Ties just take whichever comes first.
+  function showWinner() {
+    const rated = session.images.filter((i) => i.rating !== null);
+    if (rated.length === 0) return;
+    const winner = rated.reduce((best, i) => ((i.rating as number) > (best.rating as number) ? i : best));
+    selectImage(winner.id);
   }
 
   function step(delta: number) {
@@ -196,8 +210,10 @@
       // Scroll the control panel down so the preview — the thing you'll
       // be watching while rating, and now a 1:1 copy of the projector —
       // is actually on screen once you're live, rather than left up by
-      // the present button.
-      document.getElementById('preview-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // the present button. Scrolls to the scene-row (title/break/current
+      // image buttons), not the preview panel itself, so those stay
+      // visible too instead of being scrolled past.
+      document.getElementById('scene-row')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       displayStatus =
         result.mode === 'auto'
           ? `presenting on ${chosen ? chosen.label : 'the second screen'}.`
@@ -283,6 +299,8 @@
       c: () => toggleRevealPhotographer(),
       x: () => toggleRevealFlashOnly(),
       w: () => toggleBorder(),
+      o: () => (sortByScore = !sortByScore),
+      g: () => showWinner(),
       p: () => {
         void handlePresentClick();
       },
@@ -332,7 +350,7 @@
       {#if displayStatus}<span class="dim">{displayStatus}</span>{/if}
     </div>
 
-    <div class="scene-row">
+    <div class="scene-row" id="scene-row">
       <button type="button" class="btn" class:primary={session.scene === 'title'} disabled={!session.titleSlide.enabled} onclick={() => toggleScene('title')}>
         <span class="key" aria-hidden="true">[i]</span> title slide
       </button>
@@ -341,6 +359,9 @@
       </button>
       <button type="button" class="btn" class:primary={session.scene === 'photo'} disabled={session.images.length === 0} onclick={() => setScene('photo')}>
         <span class="key" aria-hidden="true">[l]</span> current image
+      </button>
+      <button type="button" class="btn" disabled={ratedCount === 0} onclick={showWinner}>
+        <span class="key" aria-hidden="true">[g]</span> show winner
       </button>
     </div>
 
@@ -391,9 +412,13 @@
                 <input type="checkbox" checked={showHeldOnly} onchange={() => (showHeldOnly = !showHeldOnly)} />
                 <span class="key" aria-hidden="true">[f]</span> show held-back only
               </label>
+              <label>
+                <input type="checkbox" checked={sortByScore} onchange={() => (sortByScore = !sortByScore)} />
+                <span class="key" aria-hidden="true">[o]</span> order by score
+              </label>
               <button type="button" class="btn danger clear-btn" onclick={() => (confirmClear = true)}>clear session</button>
             </div>
-            <ImageList images={session.images} currentImageId={session.currentImageId} {showHeldOnly} onSelect={selectImage} />
+            <ImageList images={session.images} currentImageId={session.currentImageId} {showHeldOnly} {sortByScore} onSelect={selectImage} />
             <p class="dim nav-hint">
               <span class="key" aria-hidden="true">[←/→]</span> previous/next ·
               type a number to score ·
