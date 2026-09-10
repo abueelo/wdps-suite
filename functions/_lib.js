@@ -238,3 +238,40 @@ export const PHOTOGRAPHER_MAX_LEN = 120;
 export function samePhotographer(a, b) {
   return typeof a === 'string' && typeof b === 'string' && a.trim().toLowerCase() === b.trim().toLowerCase();
 }
+
+function sanitizeForFilename(value) {
+  return String(value || '')
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^A-Za-z0-9_]/g, '');
+}
+
+// Same NN_Photographer_Title convention as entryFilename() on the frontend
+// (apps/upload-portal/src/lib/naming/entryFilename.ts, itself matching
+// comp-sheets' export naming) — but here `order` is the entry's position
+// among that one photographer's own entries (their drag-set preference
+// order), not a competition-wide sequence number. This is what a member's
+// uploaded photo is displayed/labelled as, overwriting whatever their
+// camera originally called the file.
+export function displayFilename(order, photographer, title, ext) {
+  const nn = String(order).padStart(2, '0');
+  const safePhotographer = sanitizeForFilename(photographer) || 'Unknown';
+  const safeTitle = sanitizeForFilename(title) || 'Untitled';
+  return `${nn}_${safePhotographer}_${safeTitle}.${ext}`;
+}
+
+// Maps each entry to its 1-based position among its own photographer's
+// entries, in whatever order `entries` is currently in — the same order a
+// member's drag-reorder writes back, so this stays correct after a reorder
+// without needing a separately stored rank field.
+export function rankByPhotographer(entries) {
+  const counts = new Map();
+  const ranks = new Map();
+  for (const e of entries) {
+    const key = (e.photographer || '').trim().toLowerCase();
+    const next = (counts.get(key) || 0) + 1;
+    counts.set(key, next);
+    ranks.set(e.id, next);
+  }
+  return ranks;
+}

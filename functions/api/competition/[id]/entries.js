@@ -10,6 +10,8 @@ import {
   sniffEntryFormat,
   samePhotographer,
   PHOTOGRAPHER_MAX_LEN,
+  displayFilename,
+  rankByPhotographer,
   appendLog,
   json
 } from '../../../_lib.js';
@@ -54,12 +56,17 @@ export async function onRequestGet({ request, env, params }) {
   const competition = (await loadCompetitions(env)).find((c) => c.id === params.id);
   if (!competition) return json({ error: 'not found' }, { status: 404 });
 
-  let entries = (await env.COMPETITIONS_KV.get(entriesKeyFor(params.id), 'json')) || [];
+  const allEntries = (await env.COMPETITIONS_KV.get(entriesKeyFor(params.id), 'json')) || [];
+  // Ranked over the full list, not whatever subset a member sees, so the
+  // number in an entry's display name never depends on who's asking.
+  const ranks = rankByPhotographer(allEntries);
+  let entries = allEntries;
   if (photographer !== null) {
     entries = entries.filter((e) => samePhotographer(e.photographer, photographer));
   }
   const withUrls = entries.map((e) => ({
     ...e,
+    originalFilename: displayFilename(ranks.get(e.id), e.photographer, e.title, e.ext),
     thumbnailUrl: `/api/entry-image/${entryImageKey(params.id, e.id, 'thumb')}`,
     originalUrl: `/api/entry-image/${entryImageKey(params.id, e.id, 'orig')}`
   }));
@@ -155,8 +162,10 @@ export async function onRequestPost({ request, env, params }) {
   await env.COMPETITIONS_KV.put(COMPETITIONS_KEY, JSON.stringify(all));
   await appendLog(env, 'entry.upload', `${title} — ${photographer} (${competition.name})`);
 
+  const ranks = rankByPhotographer(entries);
   return json({
     ...entry,
+    originalFilename: displayFilename(ranks.get(entryId), entry.photographer, entry.title, entry.ext),
     thumbnailUrl: `/api/entry-image/${entryImageKey(params.id, entryId, 'thumb')}`,
     originalUrl: `/api/entry-image/${entryImageKey(params.id, entryId, 'orig')}`
   });
@@ -224,10 +233,12 @@ export async function onRequestPatch({ request, env, params }) {
 
   await env.COMPETITIONS_KV.put(entriesKey, JSON.stringify(reordered));
 
+  const ranks = rankByPhotographer(reordered);
   const mine = reordered
     .filter((e) => samePhotographer(e.photographer, photographer))
     .map((e) => ({
       ...e,
+      originalFilename: displayFilename(ranks.get(e.id), e.photographer, e.title, e.ext),
       thumbnailUrl: `/api/entry-image/${entryImageKey(params.id, e.id, 'thumb')}`,
       originalUrl: `/api/entry-image/${entryImageKey(params.id, e.id, 'orig')}`
     }));
