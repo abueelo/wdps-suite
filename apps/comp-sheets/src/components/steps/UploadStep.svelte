@@ -2,14 +2,45 @@
   import { imagesStore } from '../../lib/state/images.svelte.js';
   import { parseFilename } from '../../lib/parsing/filenameParser.js';
   import { collectFromDataTransferItems, filterAcceptedFiles } from '../../lib/upload/collectFiles.js';
+  import { generatePreviewUrl } from '../../lib/upload/preview.js';
   import { listPayloads, deletePayload, RAW_ENTRY_SET_TYPE, type BusPayload } from '@wdps/shared-bus';
   import type { ImageRecord } from '../../lib/types.js';
+  import { ConfirmModal } from '@wdps/shared-ui';
 
   let { onNext }: { onNext: () => void } = $props();
 
   let dragOver = $state(false);
   let busy = $state(false);
   let error = $state('');
+
+  // Memoized per-record preview promises, same pattern as ReviewStep — lets
+  // a wrongly-dropped file be spotted and cleared right here, rather than
+  // only in the full Review table.
+  const previewCache = new Map<string, Promise<string>>();
+  function previewFor(record: ImageRecord): Promise<string> {
+    let promise = previewCache.get(record.id);
+    if (!promise) {
+      promise = generatePreviewUrl(record.originalFile);
+      previewCache.set(record.id, promise);
+    }
+    return promise;
+  }
+
+  $effect(() => {
+    return () => {
+      for (const promise of previewCache.values()) {
+        promise.then((url) => URL.revokeObjectURL(url)).catch(() => {});
+      }
+    };
+  });
+
+  let pendingRemove = $state<ImageRecord | null>(null);
+
+  function confirmRemoveRecord() {
+    if (!pendingRemove) return;
+    imagesStore.remove(pendingRemove.id);
+    pendingRemove = null;
+  }
 
   // upload-portal's "move to comp-sheets" hands a competition's entries
   // off on the bus and then navigates straight here — this picks that
@@ -153,9 +184,35 @@
 
   {#if imagesStore.all.length > 0}
     <p class="ok">{imagesStore.all.length} image{imagesStore.all.length === 1 ? '' : 's'} loaded</p>
+    <ul class="loaded-list">
+      {#each imagesStore.all as record (record.id)}
+        <li>
+          <div class="thumb-wrap">
+            {#await previewFor(record)}
+              <div class="thumb-placeholder"></div>
+            {:then url}
+              <img class="thumb" src={url} alt="" />
+            {:catch}
+              <div class="thumb-placeholder">?</div>
+            {/await}
+          </div>
+          <span class="filename">{record.originalName}</span>
+          <button type="button" class="btn remove-btn" onclick={() => (pendingRemove = record)} aria-label="remove image">×</button>
+        </li>
+      {/each}
+    </ul>
     <button class="btn primary" onclick={onNext}>continue to review →</button>
   {/if}
 </section>
+
+{#if pendingRemove}
+  <ConfirmModal
+    message={`Remove "${pendingRemove.originalName}" from this batch? This can't be undone.`}
+    confirmLabel="remove"
+    onConfirm={confirmRemoveRecord}
+    onCancel={() => (pendingRemove = null)}
+  />
+{/if}
 
 <style>
   .dropzone {
@@ -174,5 +231,53 @@
   }
   .btn input[hidden] {
     display: none;
+  }
+  .loaded-list {
+    list-style: none;
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 22rem;
+    overflow-y: auto;
+  }
+  .loaded-list li {
+    display: flex;
+    align-items: center;
+    gap: 1ch;
+    border: 1px solid var(--border);
+    padding: 0.4rem 0.6rem;
+  }
+  .thumb-wrap {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .thumb {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    display: block;
+  }
+  .thumb-placeholder {
+    width: 40px;
+    height: 40px;
+    border: 1px dashed var(--border);
+  }
+  .filename {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .remove-btn {
+    flex-shrink: 0;
+    font-size: 1.2em;
+    line-height: 1;
+    padding: 0.2em 0.6em;
   }
 </style>
