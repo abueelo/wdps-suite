@@ -2,6 +2,7 @@
   import { Divider, ThemeToggle, ConfirmModal } from '@wdps/shared-ui';
   import { bindShortcuts } from '@wdps/shared-ui/shortcuts';
   import { sessionStore } from './lib/session/store.svelte.js';
+  import { clearSession as clearStoredSession } from './lib/session/db.js';
   import { checkOwnerAuth } from './lib/auth/ownerAuth.js';
   import { openDisplayWindow } from './lib/display/secondScreen.js';
   import { emptySession } from './lib/types.js';
@@ -73,13 +74,35 @@
     if (img?.rating !== null) step(1);
   }
 
+  // A bare digit key, pressed anywhere that isn't already a text field,
+  // starts scoring the current image directly — no click or [r] first.
+  // It focuses the score field and seeds it with that one digit; every
+  // digit after that is just the browser's own native typing in an
+  // already-focused input, so "20" works the same way "2" does.
+  function startTypingScore(digit: string) {
+    const el = ratingInputEl;
+    if (!el) return;
+    el.focus();
+    el.value = digit;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
   function toggleHold() {
     const id = session.currentImageId;
     if (!id) return;
+    let heldNow = false;
     void sessionStore.update((s) => {
       const img = s.images.find((i) => i.id === id);
-      if (img) img.held = !img.held;
+      if (img) {
+        img.held = !img.held;
+        heldNow = img.held;
+      }
     });
+    // Holding one back is "done with this for now" — move on, same as
+    // rating does. Un-holding doesn't advance: that happens while
+    // reviewing held-back images, and staying put to rate it right there
+    // is the more likely next step.
+    if (heldNow) step(1);
   }
 
   function setScene(scene: Scene) {
@@ -139,10 +162,8 @@
 
   // Warns before leaving the page at all — closing/refreshing the tab,
   // or clicking the [h] home link, which is just a same-tab navigation
-  // and triggers this the same way. Ratings autosave to IndexedDB as you
-  // go, so a refresh alone is already safe; this is really about not
-  // walking away from the laptop mid-competition without having exported
-  // anything, or opening the show on a different machine by accident.
+  // and triggers this the same way. This is what gives someone the
+  // chance to cancel and go export a project file first.
   $effect(() => {
     function handler(e: BeforeUnloadEvent) {
       if (session.images.length === 0) return;
@@ -153,8 +174,25 @@
     return () => window.removeEventListener('beforeunload', handler);
   });
 
+  // Once the page is actually being torn down (the warning above was
+  // confirmed, or there was nothing to warn about), wipe the stored
+  // session rather than leaving competition photos sitting in this
+  // browser indefinitely. pagehide only fires on a real unload — never
+  // while the beforeunload prompt is still up letting someone cancel.
   $effect(() => {
+    function handler() {
+      void clearStoredSession();
+    }
+    window.addEventListener('pagehide', handler);
+    return () => window.removeEventListener('pagehide', handler);
+  });
+
+  $effect(() => {
+    const digitShortcuts = Object.fromEntries(
+      Array.from({ length: 9 }, (_, i) => String(i + 1)).map((digit) => [digit, () => startTypingScore(digit)])
+    );
     return bindShortcuts({
+      ...digitShortcuts,
       t: () => document.getElementById('theme-toggle')?.click(),
       h: () => {
         window.location.href = '/';
@@ -165,9 +203,9 @@
       ArrowUp: () => step(-1),
       k: () => toggleHold(),
       f: () => (showHeldOnly = !showHeldOnly),
-      '1': () => setScene('title'),
-      '2': () => setScene('break'),
-      '3': () => setScene('photo'),
+      i: () => setScene('title'),
+      b: () => setScene('break'),
+      l: () => setScene('photo'),
       v: () => toggleReveal(),
       w: () => toggleBorder(),
       d: () => {
@@ -213,7 +251,7 @@
           slide={session.titleSlide}
           showHeading={true}
           active={session.scene === 'title'}
-          showKey="1"
+          showKey="i"
           onUpdate={(p) => updateSlide('titleSlide', p)}
           onShowNow={() => setScene('title')}
         />
@@ -222,14 +260,14 @@
           label="break slide"
           slide={session.breakSlide}
           active={session.scene === 'break'}
-          showKey="2"
+          showKey="b"
           onUpdate={(p) => updateSlide('breakSlide', p)}
           onShowNow={() => setScene('break')}
         />
         {#if session.images.length > 0}
           <Divider />
           <button type="button" class="btn" class:primary={session.scene === 'photo'} onclick={() => setScene('photo')}>
-            <span class="key" aria-hidden="true">[3]</span> {session.scene === 'photo' ? 'showing current image' : 'back to current image'}
+            <span class="key" aria-hidden="true">[l]</span> {session.scene === 'photo' ? 'showing current image' : 'back to current image'}
           </button>
         {/if}
       </details>
@@ -251,14 +289,18 @@
         <div class="col-list">
           <section class="panel">
             <h2><span class="bracket" aria-hidden="true">[ </span>images<span class="bracket" aria-hidden="true"> ]</span></h2>
-            <label>
-              <input type="checkbox" checked={showHeldOnly} onchange={() => (showHeldOnly = !showHeldOnly)} />
-              <span class="key" aria-hidden="true">[f]</span> show held-back only
-            </label>
+            <div class="images-head">
+              <label>
+                <input type="checkbox" checked={showHeldOnly} onchange={() => (showHeldOnly = !showHeldOnly)} />
+                <span class="key" aria-hidden="true">[f]</span> show held-back only
+              </label>
+              <button type="button" class="btn danger clear-btn" onclick={() => (confirmClear = true)}>clear session</button>
+            </div>
             <ImageList images={session.images} currentImageId={session.currentImageId} {showHeldOnly} onSelect={selectImage} />
             <p class="dim nav-hint">
               <span class="key" aria-hidden="true">[←/→]</span> previous/next ·
-              <span class="key" aria-hidden="true">[r]</span> jump to score field
+              type a number to score ·
+              <span class="key" aria-hidden="true">[r]</span> edit score
             </p>
           </section>
         </div>
@@ -287,11 +329,6 @@
           />
 
           <ExportPanel {session} bind:this={exportPanelRef} />
-
-          <details class="panel">
-            <summary><span class="bracket" aria-hidden="true">[ </span>session<span class="bracket" aria-hidden="true"> ]</span></summary>
-            <button type="button" class="btn danger" onclick={() => (confirmClear = true)}>start over</button>
-          </details>
         </div>
       </div>
     {/if}
@@ -330,6 +367,21 @@
   .col-main {
     flex: 1 1 28rem;
     min-width: 0;
+  }
+  .images-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .clear-btn {
+    border-color: var(--danger);
+  }
+  .clear-btn:hover,
+  .clear-btn:focus-visible {
+    background: var(--danger);
+    color: var(--bg);
   }
   .nav-hint {
     margin-top: 0.75rem;
