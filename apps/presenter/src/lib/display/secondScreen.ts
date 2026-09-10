@@ -52,23 +52,15 @@ export async function detectExternalScreens(): Promise<ScreenChoice[]> {
   }
 }
 
-// Fullscreen has to be requested synchronously, in the same tick as the
-// click that opened the window — waiting for the popup's 'load' event
-// (as this used to) loses the user-activation window Chrome requires,
-// and the request is silently refused. Calling it immediately after
-// open()/moveTo()/resizeTo(), before anything is awaited, is what
-// actually works.
-function tryFullscreen(win: Window) {
-  try {
-    win.document.documentElement.requestFullscreen?.().catch(() => {});
-  } catch {
-    // ignored — display.html has its own click-to-fullscreen fallback
-    // for whenever the browser refuses this regardless.
-  }
-}
-
 /** Opens display.html, placed on `screen` if given (from detectExternalScreens), otherwise a plain popup. */
 export async function openDisplayWindow(url: string, screen?: any): Promise<{ mode: SecondScreenMode; window: Window }> {
+  // Fullscreen is requested by display.html itself, on its own load, not
+  // from here — this synchronous point is still the popup's pre-
+  // navigation placeholder document, not the real page. Cross-document
+  // navigation exits fullscreen automatically (a browser security
+  // measure), so fullscreening the placeholder just gets undone the
+  // instant it navigates to `url`. Requesting it from inside the actual
+  // loaded page is what survives.
   if (screen) {
     try {
       const features = `left=${screen.availLeft},top=${screen.availTop},width=${screen.availWidth},height=${screen.availHeight}`;
@@ -76,7 +68,6 @@ export async function openDisplayWindow(url: string, screen?: any): Promise<{ mo
       if (!opened) throw new Error('popup blocked');
       opened.moveTo(screen.availLeft, screen.availTop);
       opened.resizeTo(screen.availWidth, screen.availHeight);
-      tryFullscreen(opened);
       return { mode: 'auto', window: opened };
     } catch {
       // fall through to the manual popup below

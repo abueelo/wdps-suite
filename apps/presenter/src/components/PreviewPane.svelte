@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { PresenterImage } from '../lib/types.js';
-  import { blobToDisplayUrl } from '../lib/display/orientation.js';
+  import Stage from './Stage.svelte';
   import RatingControl from './RatingControl.svelte';
 
   let {
@@ -22,41 +22,23 @@
     onNext: () => void;
     ratingInputEl?: HTMLInputElement;
   } = $props();
-
-  let previewUrl = $state('');
-
-  $effect(() => {
-    const current = image;
-    let url = '';
-    let cancelled = false;
-    if (current) {
-      blobToDisplayUrl(current.blob, current.filename).then((u) => {
-        if (cancelled) return;
-        url = u;
-        previewUrl = u;
-      });
-    } else {
-      previewUrl = '';
-    }
-    return () => {
-      cancelled = true;
-      if (url) URL.revokeObjectURL(url);
-    };
-  });
 </script>
 
-<section class="panel">
+<section class="panel" id="preview-panel">
   <h2><span class="bracket" aria-hidden="true">[ </span>preview<span class="bracket" aria-hidden="true"> ]</span></h2>
   {#if progressLabel}<p class="dim progress">{progressLabel}</p>{/if}
 
+  <!-- Exactly what's on the projector right now — title/break slide or
+       the current photo, same caption and border guide — not just a
+       plain copy of the image being scored below, which may differ
+       (e.g. rating the next photo while a break slide is showing). -->
+  <div class="preview-frame">
+    <Stage />
+  </div>
+
   {#if !image}
-    <p class="dim">no image selected</p>
+    <p class="dim no-image">no image selected to score</p>
   {:else}
-    <div class="preview-frame">
-      {#if previewUrl}
-        <img src={previewUrl} alt="" />
-      {/if}
-    </div>
     <p class="meta">
       <span>{image.title || '(untitled)'}</span>
       {#if image.photographer}<span class="dim"> — {image.photographer}</span>{/if}
@@ -77,19 +59,17 @@
 
 <style>
   .preview-frame {
+    position: relative;
     background: #000;
     border: 1px solid var(--border);
     height: min(48vh, 30rem);
     margin-top: 1rem;
   }
-  .preview-frame img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
   .progress {
     margin-top: 0.5rem;
+  }
+  .no-image {
+    margin-top: 0.75rem;
   }
   .meta {
     margin-top: 0.75rem;

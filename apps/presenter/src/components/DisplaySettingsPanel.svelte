@@ -30,7 +30,7 @@
     </label>
     <label>
       <input type="checkbox" checked={revealPhotographer} onchange={onToggleRevealPhotographer} />
-      <span class="key" aria-hidden="true">[p]</span> reveal photographer on display
+      <span class="key" aria-hidden="true">[c]</span> reveal photographer on display
     </label>
     <label>
       <input type="checkbox" checked={revealFlashOnly} onchange={onToggleRevealFlashOnly} />

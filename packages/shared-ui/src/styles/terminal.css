@@ -415,7 +415,7 @@ footer.suite-footer {
 
 .edit-link:hover::after,
 .edit-link:focus-visible::after {
-  content: 'edit';
+  content: 'admin';
 }
 
 .edit-link:hover,

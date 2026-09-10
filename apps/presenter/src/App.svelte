@@ -193,6 +193,11 @@
       const result = await openDisplayWindow('/presenter/display.html', chosen?.screen);
       displayWindowRef = result.window;
       presenting = true;
+      // Scroll the control panel down so the preview — the thing you'll
+      // be watching while rating, and now a 1:1 copy of the projector —
+      // is actually on screen once you're live, rather than left up by
+      // the present button.
+      document.getElementById('preview-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       displayStatus =
         result.mode === 'auto'
           ? `presenting on ${chosen ? chosen.label : 'the second screen'}.`
@@ -220,6 +225,14 @@
   async function clearSession() {
     await sessionStore.replace(emptySession());
     confirmClear = false;
+  }
+
+  // Leaving the tool entirely should take the projector output down with
+  // it — otherwise the display window is left open showing whatever was
+  // last on it, orphaned from a control panel that's no longer running.
+  function goHome() {
+    displayWindowRef?.close();
+    window.location.href = '/';
   }
 
   // Warns before leaving the page at all — closing/refreshing the tab,
@@ -256,9 +269,7 @@
     return bindShortcuts({
       ...digitShortcuts,
       t: () => document.getElementById('theme-toggle')?.click(),
-      h: () => {
-        window.location.href = '/';
-      },
+      h: goHome,
       ArrowRight: () => step(1),
       ArrowDown: () => step(1),
       ArrowLeft: () => step(-1),
@@ -269,10 +280,10 @@
       b: () => toggleScene('break'),
       l: () => setScene('photo'),
       v: () => toggleRevealTitle(),
-      p: () => toggleRevealPhotographer(),
+      c: () => toggleRevealPhotographer(),
       x: () => toggleRevealFlashOnly(),
       w: () => toggleBorder(),
-      d: () => {
+      p: () => {
         void handlePresentClick();
       },
       r: () => ratingInputEl?.focus(),
@@ -294,7 +305,7 @@
     <div class="head-row">
       <p class="tagline dim">run the competition<span class="cursor" aria-hidden="true">█</span></p>
       <nav class="bracket-nav" aria-label="theme and suite">
-        <a href="/"><span class="key" aria-hidden="true">[h]</span> wdps</a>
+        <a href="/" onclick={() => displayWindowRef?.close()}><span class="key" aria-hidden="true">[h]</span> wdps</a>
         <ThemeToggle />
       </nav>
     </div>
@@ -305,11 +316,11 @@
   {:else if authState === 'out'}
     <AuthGate />
   {:else}
-    <p class="warn dev-note">[ under development — expect rough edges, keep a backup plan for the night ]</p>
+    <p class="warn dev-note">[ under development ]</p>
 
     <div class="present-row">
       <button type="button" class="btn primary present-btn" class:danger={presenting} onclick={() => void handlePresentClick()}>
-        <span class="key" aria-hidden="true">[d]</span> {presenting ? 'stop presenting' : 'present'}
+        <span class="key" aria-hidden="true">[p]</span> {presenting ? 'stop presenting' : 'present'}
       </button>
       {#if screensChecked && screenChoices.length > 1 && !presenting}
         <select bind:value={selectedScreenIndex} aria-label="which screen to present on">
@@ -448,10 +459,6 @@
     align-items: center;
     gap: 1rem;
     flex-wrap: wrap;
-  }
-  .present-btn {
-    font-size: 1.05em;
-    padding: 0.55em 1.4em;
   }
   .present-btn.danger {
     border-color: var(--danger);
