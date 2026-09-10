@@ -42,6 +42,29 @@
       : `${ratedCount} / ${session.images.length} rated${heldCount > 0 ? ` · ${heldCount} held back` : ''}`
   );
 
+  // Distinct upload-portal imports currently in the session, so a wrong
+  // or duplicate one can be pulled back out on its own — locally added
+  // files aren't tagged with a batch, so they're never listed here.
+  let importBatches = $derived.by(() => {
+    const byId = new Map<string, { id: string; label: string; count: number }>();
+    for (const img of session.images) {
+      if (!img.importBatch) continue;
+      const existing = byId.get(img.importBatch.id);
+      if (existing) existing.count++;
+      else byId.set(img.importBatch.id, { ...img.importBatch, count: 1 });
+    }
+    return [...byId.values()];
+  });
+
+  function removeImportBatch(batchId: string) {
+    void sessionStore.update((s) => {
+      s.images = s.images.filter((i) => i.importBatch?.id !== batchId);
+      if (!s.images.some((i) => i.id === s.currentImageId)) {
+        s.currentImageId = s.images[0]?.id ?? null;
+      }
+    });
+  }
+
   function visibleOrdered(): PresenterImage[] {
     const sorted = sortByScore
       ? [...session.images].sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1))
@@ -418,6 +441,16 @@
               </label>
               <button type="button" class="btn danger clear-btn" onclick={() => (confirmClear = true)}>clear session</button>
             </div>
+            {#if importBatches.length > 0}
+              <ul class="import-batches">
+                {#each importBatches as batch (batch.id)}
+                  <li>
+                    <span class="dim">imported: {batch.label} ({batch.count})</span>
+                    <button type="button" class="btn danger" onclick={() => removeImportBatch(batch.id)}>remove import</button>
+                  </li>
+                {/each}
+              </ul>
+            {/if}
             <ImageList images={session.images} currentImageId={session.currentImageId} {showHeldOnly} {sortByScore} onSelect={selectImage} />
             <p class="dim nav-hint">
               <span class="key" aria-hidden="true">[←/→]</span> previous/next ·
@@ -520,6 +553,17 @@
     justify-content: space-between;
     gap: 1rem;
     flex-wrap: wrap;
+  }
+  .import-batches {
+    list-style: none;
+    margin-top: 0.75rem;
+  }
+  .import-batches li {
+    display: flex;
+    align-items: center;
+    gap: 1ch;
+    flex-wrap: wrap;
+    margin-top: 0.3rem;
   }
   .clear-btn {
     border-color: var(--danger);

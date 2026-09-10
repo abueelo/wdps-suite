@@ -8,6 +8,10 @@ export interface PresenterImage {
   rating: number | null;
   held: boolean;
   order: number;
+  /** Set when this image came in as part of an upload-portal competition
+   *  import, so that whole import can be pulled back out again without
+   *  wiping the rest of the session (see App.svelte's removeImportBatch). */
+  importBatch?: { id: string; label: string };
 }
 
 export interface SlideConfig {

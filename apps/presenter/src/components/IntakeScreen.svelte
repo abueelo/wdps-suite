@@ -2,9 +2,12 @@
   import type { LiveSession, PresenterImage } from '../lib/types.js';
   import { collectFromDataTransferItems, filterAcceptedFiles } from '../lib/intake/collectFiles.js';
   import { buildImagesFromFiles } from '../lib/intake/localFiles.js';
-  import { listCompSheetsPayloads, buildImagesFromPayload } from '../lib/intake/busIntake.js';
+  import {
+    listUploadPortalCompetitions,
+    importUploadPortalCompetition,
+    type UploadPortalCompetition
+  } from '../lib/intake/uploadPortal.js';
   import { importProjectFile } from '../lib/export/projectFile.js';
-  import type { BusPayload } from '@wdps/shared-bus';
 
   let {
     onImagesReady,
@@ -17,11 +20,30 @@
   let dragOver = $state(false);
   let busy = $state(false);
   let error = $state('');
-  let busPayloads = $state<BusPayload[]>([]);
+
+  let competitions = $state<UploadPortalCompetition[]>([]);
+  let competitionsLoading = $state(true);
+  let competitionsError = $state('');
+  let importingId = $state('');
 
   $effect(() => {
-    listCompSheetsPayloads().then((p) => (busPayloads = p));
+    listUploadPortalCompetitions()
+      .then((c) => (competitions = c))
+      .catch((err) => (competitionsError = err instanceof Error ? err.message : 'could not reach upload-portal'))
+      .finally(() => (competitionsLoading = false));
   });
+
+  async function importCompetition(competition: UploadPortalCompetition) {
+    importingId = competition.id;
+    competitionsError = '';
+    try {
+      onImagesReady(await importUploadPortalCompetition(competition.id, 0));
+    } catch (err) {
+      competitionsError = err instanceof Error ? err.message : 'could not import that competition';
+    } finally {
+      importingId = '';
+    }
+  }
 
   async function addFiles(files: File[]) {
     busy = true;
@@ -52,16 +74,6 @@
       ? await collectFromDataTransferItems(e.dataTransfer.items)
       : Array.from(e.dataTransfer.files);
     await addFiles(files);
-  }
-
-  async function importFromBus(payload: BusPayload) {
-    busy = true;
-    error = '';
-    try {
-      onImagesReady(buildImagesFromPayload(payload, 0));
-    } finally {
-      busy = false;
-    }
   }
 
   async function handleProjectFile(e: Event) {
@@ -113,20 +125,34 @@
   {#if error}<p class="danger">{error}</p>{/if}
 </section>
 
-{#if busPayloads.length > 0}
-  <section class="panel">
-    <h2><span class="bracket" aria-hidden="true">[ </span>from comp-sheets<span class="bracket" aria-hidden="true"> ]</span></h2>
-    <ul class="bus-list">
-      {#each busPayloads as payload}
+<section class="panel">
+  <h2><span class="bracket" aria-hidden="true">[ </span>from upload portal<span class="bracket" aria-hidden="true"> ]</span></h2>
+  <p class="dim">signed in as the wdps owner — pulls a competition's entries straight in, full quality.</p>
+  {#if competitionsLoading}
+    <p class="dim">loading…</p>
+  {:else if competitionsError}
+    <p class="danger">{competitionsError}</p>
+  {:else if competitions.length === 0}
+    <p class="dim">no competitions in upload-portal yet.</p>
+  {:else}
+    <ul class="competition-list">
+      {#each competitions as competition}
         <li>
-          <span>{payload.label}</span>
-          <span class="dim">{payload.items.length} image{payload.items.length === 1 ? '' : 's'}</span>
-          <button class="btn" onclick={() => importFromBus(payload)}>import</button>
+          <span>{competition.name}</span>
+          <span class="dim">{competition.status} · {competition.entryCount} entr{competition.entryCount === 1 ? 'y' : 'ies'}</span>
+          <button
+            type="button"
+            class="btn"
+            disabled={competition.entryCount === 0 || importingId === competition.id}
+            onclick={() => importCompetition(competition)}
+          >
+            {importingId === competition.id ? 'importing…' : 'import'}
+          </button>
         </li>
       {/each}
     </ul>
-  </section>
-{/if}
+  {/if}
+</section>
 
 <section class="panel">
   <h2><span class="bracket" aria-hidden="true">[ </span>resume a saved project<span class="bracket" aria-hidden="true"> ]</span></h2>
@@ -152,14 +178,14 @@
   .dropzone.dragover {
     border-color: var(--amber);
   }
-  .bus-list {
+  .competition-list {
     list-style: none;
     margin-top: 0.75rem;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
   }
-  .bus-list li {
+  .competition-list li {
     display: flex;
     align-items: center;
     gap: 1ch;
