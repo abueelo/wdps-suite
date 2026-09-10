@@ -1,9 +1,9 @@
-import type { Confidence } from '../types.js';
+import type { Formatting } from '../types.js';
 
 export interface ParsedName {
   photographer: string;
   title: string;
-  confidence: Confidence;
+  formatting: Formatting;
 }
 
 // Camera/scanner default filenames carry no identity information at all —
@@ -93,7 +93,7 @@ export function parseFilename(originalName: string, knownAuthors: ReadonlySet<st
   const withoutExt = originalName.replace(/\.[^.]+$/, '');
 
   if (CAMERA_DEFAULT.test(withoutExt) || PURELY_NUMERIC.test(withoutExt) || withoutExt.trim() === '') {
-    return { photographer: '', title: '', confidence: 'attention' };
+    return { photographer: '', title: '', formatting: 'attention' };
   }
 
   const leadingNumber = LEADING_NUMBER.exec(withoutExt);
@@ -103,12 +103,12 @@ export function parseFilename(originalName: string, knownAuthors: ReadonlySet<st
   // still guess from the remaining structure.
   if (!leadingNumber) {
     const guess = guessAuthorTitle(withoutExt, knownAuthors);
-    return { photographer: guess.photographer, title: guess.title, confidence: 'attention' };
+    return { photographer: guess.photographer, title: guess.title, formatting: 'attention' };
   }
 
   const [, numberStr, rest] = leadingNumber;
   const guess = guessAuthorTitle(rest, knownAuthors);
   const correctlyFormatted = numberStr.length === 2 && guess.clean;
 
-  return { photographer: guess.photographer, title: guess.title, confidence: correctlyFormatted ? 'ok' : 'attention' };
+  return { photographer: guess.photographer, title: guess.title, formatting: correctlyFormatted ? 'ok' : 'attention' };
 }

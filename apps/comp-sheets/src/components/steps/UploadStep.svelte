@@ -26,8 +26,8 @@
     // against a real name instead of guessed at in isolation.
     const knownAuthors = new Set(
       files
-        .map((file) => (known?.has(file) ? { ...known.get(file)!, confidence: 'ok' as const } : parseFilename(file.name)))
-        .filter((p) => p.confidence === 'ok' && p.photographer)
+        .map((file) => (known?.has(file) ? { ...known.get(file)!, formatting: 'ok' as const } : parseFilename(file.name)))
+        .filter((p) => p.formatting === 'ok' && p.photographer)
         .map((p) => p.photographer.toLowerCase())
     );
 
@@ -35,7 +35,7 @@
     return files.map((file) => {
       const meta = known?.get(file);
       const parsed = meta
-        ? { photographer: meta.photographer, title: meta.title, confidence: 'ok' as const }
+        ? { photographer: meta.photographer, title: meta.title, formatting: 'ok' as const }
         : parseFilename(file.name, knownAuthors);
       const count = perPhotographerCount.get(parsed.photographer) ?? 0;
       perPhotographerCount.set(parsed.photographer, count + 1);
@@ -45,7 +45,7 @@
         originalName: file.name,
         photographer: parsed.photographer,
         title: parsed.title,
-        confidence: parsed.confidence,
+        formatting: parsed.formatting,
         confirmed: false,
         priority: count
       };

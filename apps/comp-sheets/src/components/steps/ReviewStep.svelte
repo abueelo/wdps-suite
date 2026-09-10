@@ -45,7 +45,7 @@
   }
 
   function updatePhotographer(record: ImageRecord, value: string) {
-    imagesStore.update(record.id, { photographer: value, confidence: value.trim() ? record.confidence : 'attention' });
+    imagesStore.update(record.id, { photographer: value, formatting: value.trim() ? record.formatting : 'attention' });
   }
 
   function updateTitle(record: ImageRecord, value: string) {
@@ -64,12 +64,12 @@
     pendingRemove = null;
   }
 
-  const confidenceLabel: Record<ImageRecord['confidence'], string> = {
+  const formattingLabel: Record<ImageRecord['formatting'], string> = {
     ok: 'correctly formatted',
     attention: 'needs attention'
   };
 
-  const confidenceClass: Record<ImageRecord['confidence'], string> = {
+  const formattingClass: Record<ImageRecord['formatting'], string> = {
     ok: 'ok',
     attention: 'warn'
   };
@@ -86,7 +86,7 @@
           <th>file</th>
           <th>photographer</th>
           <th>title</th>
-          <th>confidence</th>
+          <th>formatting</th>
           <th></th>
         </tr>
       </thead>
@@ -131,7 +131,7 @@
                 placeholder="image title"
               />
             </td>
-            <td class={confidenceClass[record.confidence]}>{confidenceLabel[record.confidence]}</td>
+            <td class={formattingClass[record.formatting]}>{formattingLabel[record.formatting]}</td>
             <td><button class="link-btn danger remove-btn" onclick={() => (pendingRemove = record)} aria-label="remove image">×</button></td>
           </tr>
         {/each}

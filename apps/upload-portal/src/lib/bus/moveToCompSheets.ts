@@ -8,7 +8,7 @@ import { entryFilename } from '../naming/entryFilename.js';
  * cross-app bus (packages/shared-bus) — fetches each entry's original
  * bytes, then drops them on the bus with photographer/title carried as
  * structured `meta` (not just baked into the filename) so comp-sheets'
- * UploadStep imports them straight in at confidence 'ok', no re-typing.
+ * UploadStep imports them straight in at formatting 'ok', no re-typing.
  */
 export async function moveToCompSheets(competition: Competition, entries: Entry[]): Promise<number> {
   const included = entries.filter((e) => !e.excluded && e.originalUrl);

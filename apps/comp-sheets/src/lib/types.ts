@@ -1,4 +1,4 @@
-export type Confidence = 'ok' | 'attention';
+export type Formatting = 'ok' | 'attention';
 
 export interface ImageRecord {
   id: string;
@@ -8,7 +8,7 @@ export interface ImageRecord {
   photographer: string;
   /** Image title, entered/edited by the user — not reliably derivable from filename. */
   title: string;
-  confidence: Confidence;
+  formatting: Formatting;
   /** Set once the user has confirmed/edited this row in the Review step. */
   confirmed: boolean;
   /** Order among this photographer's images, as set in Review/priority list. Lower = higher priority. */
