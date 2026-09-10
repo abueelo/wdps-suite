@@ -34,7 +34,7 @@
         {#if img.photographer}<span class="dim photographer">{img.photographer}</span>{/if}
         <span class="badges">
           {#if img.held}<span class="warn" title="held back">held</span>{/if}
-          <span class={img.rating === null ? 'dim' : 'ok'}>{img.rating === null ? '—' : img.rating}</span>
+          {#if img.rating !== null}<span class="ok">{img.rating}</span>{/if}
         </span>
       </button>
     </li>
