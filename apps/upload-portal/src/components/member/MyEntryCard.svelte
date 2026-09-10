@@ -34,7 +34,7 @@
   ondrop={(e) => { e.preventDefault(); onDropOn(entry.id); }}
 >
   <div class="thumb">
-    <span class="rank" aria-hidden="true">{rank}</span>
+    <span class="rank" title="upload preference order" aria-label={`preference ${rank}`}>{rank}</span>
     {#if canDelete}<span class="drag-handle" aria-hidden="true" title="drag to reorder">≡</span>{/if}
     <img src={entry.thumbnailUrl} alt="" loading="lazy" />
   </div>
@@ -78,15 +78,21 @@
   }
   .rank {
     position: absolute;
-    top: 0.35rem;
-    left: 0.35rem;
-    min-width: 1.4em;
-    text-align: center;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    font-size: 0.8em;
-    line-height: 1.4;
+    top: 0.4rem;
+    left: 0.4rem;
+    min-width: 1.9em;
+    height: 1.9em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--amber);
+    color: var(--bg);
+    font-size: 1.1em;
+    font-weight: bold;
+    line-height: 1;
     z-index: 1;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
   }
   .drag-handle {
     position: absolute;
