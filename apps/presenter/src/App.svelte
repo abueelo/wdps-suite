@@ -3,7 +3,7 @@
   import { bindShortcuts } from '@wdps/shared-ui/shortcuts';
   import { sessionStore } from './lib/session/store.svelte.js';
   import { clearSession as clearStoredSession } from './lib/session/db.js';
-  import { checkOwnerAuth } from './lib/auth/ownerAuth.js';
+  import { checkOwnerAuth, ownerLogout } from './lib/auth/ownerAuth.js';
   import { openDisplayWindow, detectExternalScreens, type ScreenChoice } from './lib/display/secondScreen.js';
   import { emptySession } from './lib/types.js';
   import type { PresenterImage, LiveSession, SlideConfig, Scene } from './lib/types.js';
@@ -274,6 +274,12 @@
     window.location.href = '/';
   }
 
+  async function logout() {
+    displayWindowRef?.close();
+    await ownerLogout();
+    authState = 'out';
+  }
+
   // Warns before leaving the page at all — closing/refreshing the tab,
   // or clicking the [h] home link, which is just a same-tab navigation
   // and triggers this the same way. This is what gives someone the
@@ -320,10 +326,13 @@
       l: () => setScene('photo'),
       v: () => toggleRevealTitle(),
       c: () => toggleRevealPhotographer(),
-      x: () => toggleRevealFlashOnly(),
+      q: () => toggleRevealFlashOnly(),
       w: () => toggleBorder(),
       o: () => (sortByScore = !sortByScore),
       g: () => showWinner(),
+      x: () => {
+        if (authState === 'in') void logout();
+      },
       p: () => {
         void handlePresentClick();
       },
@@ -347,6 +356,9 @@
       <p class="tagline dim">run the competition<span class="cursor" aria-hidden="true">█</span></p>
       <nav class="bracket-nav" aria-label="theme and suite">
         <a href="/" onclick={() => displayWindowRef?.close()}><span class="key" aria-hidden="true">[h]</span> wdps</a>
+        {#if authState === 'in'}
+          <button type="button" onclick={() => void logout()}><span class="key" aria-hidden="true">[x]</span> log out</button>
+        {/if}
         <ThemeToggle />
       </nav>
     </div>
