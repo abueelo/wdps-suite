@@ -34,6 +34,7 @@
   });
 
   async function importCompetition(competition: UploadPortalCompetition) {
+    if (competition.status !== 'locked') return;
     importingId = competition.id;
     competitionsError = '';
     try {
@@ -143,7 +144,8 @@
           <button
             type="button"
             class="btn"
-            disabled={competition.entryCount === 0 || importingId === competition.id}
+            disabled={competition.status !== 'locked' || competition.entryCount === 0 || importingId === competition.id}
+            title={competition.status !== 'locked' ? 'lock entries in upload-portal first' : ''}
             onclick={() => importCompetition(competition)}
           >
             {importingId === competition.id ? 'importing…' : 'import'}
