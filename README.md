@@ -59,6 +59,6 @@ upload-portal's dev server alone doesn't have its API — that needs Cloudflare'
 
 ## deploying
 
-Deploys through GitHub Actions (`.github/workflows/deploy.yml`) on push to `main`. Full steps in [CLOUDFLARE.md](CLOUDFLARE.md).
+Cloudflare Pages, connected to GitHub. Full steps in [CLOUDFLARE.md](CLOUDFLARE.md).
 
-Work happens on the `test` branch; `main` only gets merges when they're actually ready to go live, since that's what triggers the deploy.
+Work happens on the `test` branch; `main` only gets merges when they're actually ready to go live, since that's what Pages deploys to production from.
