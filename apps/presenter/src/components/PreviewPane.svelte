@@ -58,6 +58,13 @@
 </section>
 
 <style>
+  /* The panel's "[ preview ]" legend floats above its own top border
+     (see .panel > h2 in terminal.css), outside the box scrollIntoView
+     aligns to — without this, scrolling the panel flush with the
+     viewport top clips that floating heading right off. */
+  #preview-panel {
+    scroll-margin-top: 2rem;
+  }
   .preview-frame {
     position: relative;
     background: #000;

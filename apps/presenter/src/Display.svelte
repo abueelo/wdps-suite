@@ -8,13 +8,12 @@
 
   // Attempted immediately on load, in this document — not from the
   // window that opened this one (see secondScreen.ts for why that
-  // doesn't stick). This still isn't guaranteed: browsers only grant
-  // fullscreen off a genuine user gesture, and whatever activation
-  // carried over from the click that opened this window doesn't always
-  // count once a document has actually finished loading. When it's
-  // refused, a small hint below lets the presenter grant it themselves
-  // with a single click — the only way to make it 100% certain, since no
-  // page can force itself fullscreen unconditionally.
+  // doesn't stick). This is expected to fail more often than not: a
+  // freshly opened window has no user-gesture history of its own, and
+  // Chrome's fullscreen grant is gated on exactly that, regardless of
+  // the gesture that opened the window in the first place. There's no
+  // way around this from code — the one click below is genuinely the
+  // only route to fullscreen a page can't already have.
   let showFullscreenHint = $state(false);
 
   $effect(() => {
@@ -44,7 +43,9 @@
   <Stage />
 
   {#if showFullscreenHint}
-    <p class="fullscreen-hint">click to fill the screen</p>
+    <button type="button" class="fullscreen-hint" onclick={handlePageClick}>
+      click anywhere to go fullscreen
+    </button>
   {/if}
 </div>
 
@@ -64,13 +65,18 @@
   }
   .fullscreen-hint {
     position: fixed;
-    top: 1vh;
-    right: 1vw;
-    background: #000;
-    color: #6e6b60;
-    padding: 0.3em 0.7em;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.88);
+    border: 2px solid #c9a25e;
+    color: #c9a25e;
+    padding: 0.9em 1.6em;
+    font: inherit;
     font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, "Liberation Mono", monospace;
-    font-size: 0.85rem;
+    font-size: 1.5rem;
+    letter-spacing: 0.04em;
+    border-radius: 0;
     cursor: pointer;
   }
 </style>
