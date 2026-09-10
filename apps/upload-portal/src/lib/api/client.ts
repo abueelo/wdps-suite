@@ -96,6 +96,11 @@ export const deleteMyEntry = (competitionId: string, entryId: string, photograph
     { method: 'DELETE' }
   );
 
+// Reorders a member's own entries (best first) — this becomes the order
+// comp-sheets numbers them in once the competition moves over.
+export const reorderMyEntries = (competitionId: string, photographer: string, order: string[]) =>
+  patchJson<{ competition: Competition; entries: Entry[] }>(`/api/competition/${competitionId}/entries`, { photographer, order });
+
 // -- owner --
 
 export const ownerMe = () => request<{ authed: boolean }>('/api/owner-me');

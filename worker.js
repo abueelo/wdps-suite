@@ -29,7 +29,7 @@ const routes = [
   { pattern: '/api/settings', GET: settings.onRequestGet, PUT: settings.onRequestPut },
   { pattern: '/api/competitions', GET: competitions.onRequestGet, POST: competitions.onRequestPost },
   { pattern: '/api/competition/:id', GET: competitionId.onRequestGet, PATCH: competitionId.onRequestPatch, DELETE: competitionId.onRequestDelete },
-  { pattern: '/api/competition/:id/entries', GET: entries.onRequestGet, POST: entries.onRequestPost },
+  { pattern: '/api/competition/:id/entries', GET: entries.onRequestGet, POST: entries.onRequestPost, PATCH: entries.onRequestPatch },
   { pattern: '/api/competition/:id/entry/:entryId', PATCH: entryId.onRequestPatch, DELETE: entryId.onRequestDelete },
   { pattern: '/api/entry-image/:key', GET: entryImage.onRequestGet },
   { pattern: '/api/owner-login', GET: ownerLogin.onRequestGet },

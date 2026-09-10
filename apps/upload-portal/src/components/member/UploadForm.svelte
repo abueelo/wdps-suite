@@ -3,7 +3,7 @@
   import { filterAcceptedFiles } from '../../lib/upload/collectFiles.js';
   import { decodeForUpload } from '../../lib/upload/thumbnail.js';
   import { guessTitle } from '../../lib/upload/guessTitle.js';
-  import { listMyEntries, uploadEntry, deleteMyEntry } from '../../lib/api/client.js';
+  import { listMyEntries, uploadEntry, deleteMyEntry, reorderMyEntries } from '../../lib/api/client.js';
   import { ConfirmModal } from '@wdps/shared-ui';
   import MyEntryCard from './MyEntryCard.svelte';
 
@@ -47,6 +47,35 @@
   let existingError = $state('');
   let liveCompetition = $state<Competition>(competition);
   let canDelete = $derived(liveCompetition.status === 'open');
+
+  // Drag state and persistence for reordering the "already uploaded" grid —
+  // separate from `dragging` below, which is the pre-upload queue's own.
+  let draggingEntryId = $state<string | null>(null);
+  let reorderError = $state('');
+
+  async function reorderExisting(draggedId: string, targetId: string) {
+    if (draggedId === targetId) return;
+    const fromIdx = existingEntries.findIndex((e) => e.id === draggedId);
+    const toIdx = existingEntries.findIndex((e) => e.id === targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+    const next = [...existingEntries];
+    const [moved] = next.splice(fromIdx, 1);
+    next.splice(toIdx, 0, moved);
+    const previous = existingEntries;
+    existingEntries = next;
+    reorderError = '';
+    try {
+      const res = await reorderMyEntries(
+        competition.id,
+        photographer,
+        next.map((e) => e.id)
+      );
+      existingEntries = res.entries;
+    } catch (err) {
+      existingEntries = previous;
+      reorderError = err instanceof Error ? err.message : 'failed to save that order';
+    }
+  }
 
   $effect(() => {
     (async () => {
@@ -243,11 +272,27 @@
     <p class="danger">{existingError}</p>
   {:else if existingEntries.length > 0}
     <h3 class="section-title">your uploads so far</h3>
+    {#if canDelete && existingEntries.length > 1}
+      <p class="dim reorder-hint">drag <span aria-hidden="true">≡</span> to put your favourites first</p>
+    {/if}
     <div class="existing-grid">
-      {#each existingEntries as entry (entry.id)}
-        <MyEntryCard {entry} {canDelete} onRequestDelete={(e) => (pendingDeleteEntry = e)} />
+      {#each existingEntries as entry, i (entry.id)}
+        <MyEntryCard
+          {entry}
+          rank={i + 1}
+          {canDelete}
+          dragging={draggingEntryId === entry.id}
+          onRequestDelete={(e) => (pendingDeleteEntry = e)}
+          onDragStart={(id) => (draggingEntryId = id)}
+          onDragEnd={() => (draggingEntryId = null)}
+          onDropOn={(targetId) => {
+            if (draggingEntryId) reorderExisting(draggingEntryId, targetId);
+            draggingEntryId = null;
+          }}
+        />
       {/each}
     </div>
+    {#if reorderError}<p class="danger">{reorderError}</p>{/if}
     {#if deleteError}<p class="danger">{deleteError}</p>{/if}
   {/if}
 

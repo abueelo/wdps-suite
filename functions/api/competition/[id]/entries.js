@@ -161,3 +161,76 @@ export async function onRequestPost({ request, env, params }) {
     originalUrl: `/api/entry-image/${entryImageKey(params.id, entryId, 'orig')}`
   });
 }
+
+// Lets a member set the order they'd like their own entries considered in
+// (best shot first) — this is also the order comp-sheets numbers entries
+// in (01_, 02_, ...) once a competition moves over, via its per-photographer
+// `priority`, which it assigns from the order entries arrive in. Only the
+// positions occupied by this photographer's own entries change; everyone
+// else's stay exactly where they were.
+function reorderPhotographerEntries(entries, photographer, orderedIds) {
+  const mineIndices = [];
+  const mineById = new Map();
+  entries.forEach((e, i) => {
+    if (samePhotographer(e.photographer, photographer)) {
+      mineIndices.push(i);
+      mineById.set(e.id, e);
+    }
+  });
+  if (orderedIds.length !== mineIndices.length || !orderedIds.every((id) => mineById.has(id))) {
+    return null;
+  }
+  const next = [...entries];
+  orderedIds.forEach((id, i) => {
+    next[mineIndices[i]] = mineById.get(id);
+  });
+  return next;
+}
+
+export async function onRequestPatch({ request, env, params }) {
+  if (!(await requireMemberOrAdmin(request, env))) {
+    return json({ error: 'not authorised' }, { status: 401 });
+  }
+  if (!validId(params.id)) {
+    return json({ error: 'invalid id' }, { status: 400 });
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: 'invalid json' }, { status: 400 });
+  }
+
+  const photographer = String(body.photographer || '').trim().slice(0, PHOTOGRAPHER_MAX_LEN);
+  const order = Array.isArray(body.order) ? body.order : null;
+  if (!photographer || !order || order.length === 0 || !order.every((id) => typeof id === 'string')) {
+    return json({ error: 'photographer and order are required' }, { status: 400 });
+  }
+
+  const all = await loadCompetitions(env);
+  const competition = all.find((c) => c.id === params.id);
+  if (!competition) return json({ error: 'not found' }, { status: 404 });
+  if (competition.status !== 'open') {
+    return json({ error: 'this competition is no longer accepting changes' }, { status: 409 });
+  }
+
+  const entriesKey = entriesKeyFor(params.id);
+  const entries = (await env.COMPETITIONS_KV.get(entriesKey, 'json')) || [];
+  const reordered = reorderPhotographerEntries(entries, photographer, order);
+  if (!reordered) {
+    return json({ error: 'order must list exactly this photographer’s own entries' }, { status: 400 });
+  }
+
+  await env.COMPETITIONS_KV.put(entriesKey, JSON.stringify(reordered));
+
+  const mine = reordered
+    .filter((e) => samePhotographer(e.photographer, photographer))
+    .map((e) => ({
+      ...e,
+      thumbnailUrl: `/api/entry-image/${entryImageKey(params.id, e.id, 'thumb')}`,
+      originalUrl: `/api/entry-image/${entryImageKey(params.id, e.id, 'orig')}`
+    }));
+
+  return json({ competition, entries: mine });
+}
