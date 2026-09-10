@@ -55,8 +55,8 @@
   }
 </script>
 
-<section class="panel">
-  <h2><span class="bracket" aria-hidden="true">[ </span>export<span class="bracket" aria-hidden="true"> ]</span></h2>
+<details class="panel">
+  <summary><span class="bracket" aria-hidden="true">[ </span>export<span class="bracket" aria-hidden="true"> ]</span></summary>
 
   <div class="field">
     <label for="competition-name">competition name</label>
@@ -83,7 +83,7 @@
   </div>
 
   {#if status}<p class="dim">{status}</p>{/if}
-</section>
+</details>
 
 <style>
   .field {

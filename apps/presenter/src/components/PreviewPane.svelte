@@ -66,16 +66,13 @@
   .preview-frame {
     background: #000;
     border: 1px solid var(--border);
-    aspect-ratio: 16 / 10;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    height: min(48vh, 30rem);
     margin-top: 1rem;
-    overflow: hidden;
   }
   .preview-frame img {
-    max-width: 100%;
-    max-height: 100%;
+    display: block;
+    width: 100%;
+    height: 100%;
     object-fit: contain;
   }
   .meta {

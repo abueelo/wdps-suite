@@ -131,7 +131,7 @@ nav.bracket-nav button:focus-visible {
 
 /* bordered sections with a floating [ heading ] legend */
 
-section.panel {
+.panel {
   position: relative;
   border: 1px solid var(--border);
   padding: 1.5rem 1.75rem 1.25rem;
@@ -139,15 +139,16 @@ section.panel {
   transition: border-color 0.25s ease;
 }
 
-section.panel:first-of-type {
+.panel:first-of-type {
   margin-top: 1.5rem;
 }
 
-section.panel:hover {
+.panel:hover {
   border-color: var(--border-hover);
 }
 
-section.panel > h2 {
+.panel > h2,
+.panel > summary {
   position: absolute;
   top: -0.85em;
   left: 1.25ch;
@@ -159,8 +160,21 @@ section.panel > h2 {
   letter-spacing: 0.05em;
 }
 
-section.panel > h2 .bracket {
+.panel > h2 .bracket,
+.panel > summary .bracket {
   color: var(--dim);
+}
+
+/* <details class="panel"><summary>...</summary>...</details> — the same
+   floating-legend panel, but collapsible. The legend itself becomes the
+   toggle, keyboard-operable for free since <summary> already is. */
+.panel > summary {
+  cursor: pointer;
+}
+
+.panel > summary:hover,
+.panel > summary:focus-visible {
+  color: var(--amber);
 }
 
 .dim { color: var(--dim); }

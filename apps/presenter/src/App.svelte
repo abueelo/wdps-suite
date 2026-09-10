@@ -172,59 +172,50 @@
   {:else}
     <p class="warn dev-note">[ under development — expect rough edges, keep a backup plan for the night ]</p>
 
-    <div class="workspace">
-      <div class="column setup-column">
-        <section class="panel">
-          <h2><span class="bracket" aria-hidden="true">[ </span>slides<span class="bracket" aria-hidden="true"> ]</span></h2>
-          <SlideEditor
-            label="title slide"
-            slide={session.titleSlide}
-            showHeading={true}
-            active={session.scene === 'title'}
-            showKey="1"
-            onUpdate={(p) => updateSlide('titleSlide', p)}
-            onShowNow={() => setScene('title')}
-          />
-          <Divider />
-          <SlideEditor
-            label="break slide"
-            slide={session.breakSlide}
-            active={session.scene === 'break'}
-            showKey="2"
-            onUpdate={(p) => updateSlide('breakSlide', p)}
-            onShowNow={() => setScene('break')}
-          />
-          {#if session.images.length > 0}
-            <Divider />
-            <button type="button" class="btn" class:primary={session.scene === 'photo'} onclick={() => setScene('photo')}>
-              <span class="key" aria-hidden="true">[3]</span> {session.scene === 'photo' ? 'showing current image' : 'back to current image'}
-            </button>
-          {/if}
-        </section>
-
-        <DisplaySettingsPanel
-          revealOnDisplay={session.revealOnDisplay}
-          borderGuide={session.borderGuide}
-          {displayStatus}
-          onToggleReveal={toggleReveal}
-          onToggleBorder={toggleBorder}
-          onOpenDisplay={openDisplay}
+    {#snippet slidesDetails()}
+      <details class="panel">
+        <summary><span class="bracket" aria-hidden="true">[ </span>slides<span class="bracket" aria-hidden="true"> ]</span></summary>
+        <SlideEditor
+          label="title slide"
+          slide={session.titleSlide}
+          showHeading={true}
+          active={session.scene === 'title'}
+          showKey="1"
+          onUpdate={(p) => updateSlide('titleSlide', p)}
+          onShowNow={() => setScene('title')}
         />
-
+        <Divider />
+        <SlideEditor
+          label="break slide"
+          slide={session.breakSlide}
+          active={session.scene === 'break'}
+          showKey="2"
+          onUpdate={(p) => updateSlide('breakSlide', p)}
+          onShowNow={() => setScene('break')}
+        />
         {#if session.images.length > 0}
-          <ExportPanel {session} bind:this={exportPanelRef} />
-
-          <section class="panel">
-            <h2><span class="bracket" aria-hidden="true">[ </span>session<span class="bracket" aria-hidden="true"> ]</span></h2>
-            <button type="button" class="btn danger" onclick={() => (confirmClear = true)}>start over</button>
-          </section>
+          <Divider />
+          <button type="button" class="btn" class:primary={session.scene === 'photo'} onclick={() => setScene('photo')}>
+            <span class="key" aria-hidden="true">[3]</span> {session.scene === 'photo' ? 'showing current image' : 'back to current image'}
+          </button>
         {/if}
-      </div>
+      </details>
+    {/snippet}
 
-      <div class="column main-column">
-        {#if session.images.length === 0}
-          <IntakeScreen {onImagesReady} {onProjectImported} />
-        {:else}
+    {#if session.images.length === 0}
+      <IntakeScreen {onImagesReady} {onProjectImported} />
+      {@render slidesDetails()}
+      <DisplaySettingsPanel
+        revealOnDisplay={session.revealOnDisplay}
+        borderGuide={session.borderGuide}
+        {displayStatus}
+        onToggleReveal={toggleReveal}
+        onToggleBorder={toggleBorder}
+        onOpenDisplay={openDisplay}
+      />
+    {:else}
+      <div class="workspace">
+        <div class="col-list">
           <section class="panel">
             <h2><span class="bracket" aria-hidden="true">[ </span>images<span class="bracket" aria-hidden="true"> ]</span></h2>
             <label>
@@ -237,11 +228,31 @@
               <span class="key" aria-hidden="true">[r]</span> jump to score field
             </p>
           </section>
+        </div>
 
+        <div class="col-main">
           <PreviewPane image={currentImage} onRate={setRating} onToggleHold={toggleHold} bind:ratingInputEl={ratingInputEl} />
-        {/if}
+
+          {@render slidesDetails()}
+
+          <DisplaySettingsPanel
+            revealOnDisplay={session.revealOnDisplay}
+            borderGuide={session.borderGuide}
+            {displayStatus}
+            onToggleReveal={toggleReveal}
+            onToggleBorder={toggleBorder}
+            onOpenDisplay={openDisplay}
+          />
+
+          <ExportPanel {session} bind:this={exportPanelRef} />
+
+          <details class="panel">
+            <summary><span class="bracket" aria-hidden="true">[ </span>session<span class="bracket" aria-hidden="true"> ]</span></summary>
+            <button type="button" class="btn danger" onclick={() => (confirmClear = true)}>start over</button>
+          </details>
+        </div>
       </div>
-    </div>
+    {/if}
 
     {#if confirmClear}
       <ConfirmModal
@@ -270,8 +281,12 @@
     flex-wrap: wrap;
     align-items: flex-start;
   }
-  .column {
-    flex: 1 1 22rem;
+  .col-list {
+    flex: 0 1 20rem;
+    min-width: 16rem;
+  }
+  .col-main {
+    flex: 1 1 28rem;
     min-width: 0;
   }
   .nav-hint {

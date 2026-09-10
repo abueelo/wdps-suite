@@ -16,8 +16,8 @@
   } = $props();
 </script>
 
-<section class="panel">
-  <h2><span class="bracket" aria-hidden="true">[ </span>display<span class="bracket" aria-hidden="true"> ]</span></h2>
+<details class="panel">
+  <summary><span class="bracket" aria-hidden="true">[ </span>display<span class="bracket" aria-hidden="true"> ]</span></summary>
 
   <button type="button" class="btn primary" onclick={onOpenDisplay}>
     <span class="key" aria-hidden="true">[d]</span> open display window
@@ -34,7 +34,7 @@
       <span class="key" aria-hidden="true">[w]</span> thin white border guide
     </label>
   </div>
-</section>
+</details>
 
 <style>
   .status {

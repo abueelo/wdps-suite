@@ -22,6 +22,10 @@ export function bindShortcuts(map: ShortcutMap): () => void {
     if (isTypingTarget(e.target)) return;
     const action = map[e.key];
     if (!action) return;
+    // Stops the browser's own default for the key (page scroll on arrow
+    // keys/space being the main one) now that it's been claimed as a
+    // shortcut — otherwise the page scrolls *and* the shortcut fires.
+    e.preventDefault();
     action();
   }
   document.addEventListener('keydown', handler);
