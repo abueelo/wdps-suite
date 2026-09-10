@@ -50,8 +50,8 @@
 
 <div class="page">
   <header class="suite-header">
-    <pre class="name" aria-hidden="true" style="--banner-cols: 34;"> █ █ █▀█ █   █▀█ ▄▀▄ █▀▄  █▀█ █▀█ █▀█ ▀█▀ ▄▀▄ █
- █▄█ █▀▀ █▄▄ █▄█ █▀█ █▄▀  █▀▀ █▄█ █▀▄  █  █▀█ █▄▄</pre>
+    <pre class="name" aria-hidden="true" style="--banner-cols: 34;">█ █ █▀█ █   █▀█ ▄▀▄ █▀▄  █▀█ █▀█ █▀█ ▀█▀ ▄▀▄ █
+█▄█ █▀▀ █▄▄ █▄█ █▀█ █▄▀  █▀▀ █▄█ █▀▄  █  █▀█ █▄▄</pre>
     <h1 class="visually-hidden">upload-portal</h1>
     <div class="head-row">
       <p class="tagline dim">submit your competition entries<span class="cursor" aria-hidden="true">█</span></p>

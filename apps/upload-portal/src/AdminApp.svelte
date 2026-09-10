@@ -52,8 +52,8 @@
 
 <div class="page">
   <header class="suite-header">
-    <pre class="name" aria-hidden="true" style="--banner-cols: 49;"> █ █ █▀█ █   █▀█ ▄▀▄ █▀▄  █▀█ █▀█ █▀█ ▀█▀ ▄▀▄ █    ▄▀▄ █▀▄ █▀▄▀█ █ █▄█
- █▄█ █▀▀ █▄▄ █▄█ █▀█ █▄▀  █▀▀ █▄█ █▀▄  █  █▀█ █▄▄  █▀█ █▄▀ █ ▀ █ █ █▀█</pre>
+    <pre class="name" aria-hidden="true" style="--banner-cols: 49;">█ █ █▀█ █   █▀█ ▄▀▄ █▀▄  █▀█ █▀█ █▀█ ▀█▀ ▄▀▄ █    ▄▀▄ █▀▄ █▀▄▀█ █ █▄█
+█▄█ █▀▀ █▄▄ █▄█ █▀█ █▄▀  █▀▀ █▄█ █▀▄  █  █▀█ █▄▄  █▀█ █▄▀ █ ▀ █ █ █▀█</pre>
     <h1 class="visually-hidden">upload-portal admin</h1>
     <div class="head-row">
       <p class="tagline dim">review entries, manage competitions<span class="cursor" aria-hidden="true">█</span></p>

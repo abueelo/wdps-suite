@@ -288,8 +288,8 @@
 
 <div class="page">
   <header class="suite-header">
-    <pre class="name" aria-hidden="true" style="--banner-cols: 25;"> █▀█ █▀█ █▀▀ ▄▀▀ █▀▀ █▄█ ▀█▀ █▀▀ █▀█
- █▀▀ █▀▄ ██▄ ▄██ ██▄ █▀█  █  ██▄ █▀▄</pre>
+    <pre class="name" aria-hidden="true" style="--banner-cols: 25;">█▀█ █▀█ █▀▀ ▄▀▀ █▀▀ █▄█ ▀█▀ █▀▀ █▀█
+█▀▀ █▀▄ ██▄ ▄██ ██▄ █▀█  █  ██▄ █▀▄</pre>
     <h1 class="visually-hidden">presenter</h1>
     <div class="head-row">
       <p class="tagline dim">run the competition<span class="cursor" aria-hidden="true">█</span></p>

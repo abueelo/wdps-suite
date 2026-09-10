@@ -62,6 +62,12 @@ a:focus-visible {
 
 .name {
   color: var(--fg);
+  /* Browsers default <pre> to a generic "monospace" font via their own
+     UA stylesheet, which overrides the inherited font stack — without
+     this the banner renders in a different monospace font than the
+     rest of the page, throwing off its exact character-grid alignment
+     against everything below it. */
+  font-family: inherit;
   font-size: min(1rem, calc((100vw - 3rem) / var(--banner-cols, 30)));
   line-height: 1.25;
   user-select: none;

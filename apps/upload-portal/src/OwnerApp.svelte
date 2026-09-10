@@ -40,8 +40,8 @@
 
 <div class="page">
   <header class="suite-header">
-    <pre class="name" aria-hidden="true" style="--banner-cols: 50;"> █ █ █▀█ █   █▀█ ▄▀▄ █▀▄  █▀█ █▀█ █▀█ ▀█▀ ▄▀▄ █    █▀█ █ ▄ █ █▄█ █▀▀ █▀█
- █▄█ █▀▀ █▄▄ █▄█ █▀█ █▄▀  █▀▀ █▄█ █▀▄  █  █▀█ █▄▄  █▄█ █▀ ▀█ █▀█ ██▄ █▀▄</pre>
+    <pre class="name" aria-hidden="true" style="--banner-cols: 50;">█ █ █▀█ █   █▀█ ▄▀▄ █▀▄  █▀█ █▀█ █▀█ ▀█▀ ▄▀▄ █    █▀█ █ ▄ █ █▄█ █▀▀ █▀█
+█▄█ █▀▀ █▄▄ █▄█ █▀█ █▄▀  █▀▀ █▄█ █▀▄  █  █▀█ █▄▄  █▄█ █▀ ▀█ █▀█ ██▄ █▀▄</pre>
     <h1 class="visually-hidden">upload-portal owner</h1>
     <div class="head-row">
       <p class="tagline dim">credentials, storage, activity log<span class="cursor" aria-hidden="true">█</span></p>

@@ -36,8 +36,8 @@
 
 <div class="page">
   <header class="suite-header">
-    <pre class="name" aria-hidden="true" style="--banner-cols: 30;"> █▀▀ █▀█ █▄ ▄█ █▀█  ▄▀▀ █ █ █▀▀ █▀▀ ▀█▀ ▄▀▀
- █▄▄ █▄█ █ ▀ █ █▀▀  ▄██ █▀█ ██▄ ██▄  █  ▄██</pre>
+    <pre class="name" aria-hidden="true" style="--banner-cols: 30;">█▀▀ █▀█ █▄ ▄█ █▀█  ▄▀▀ █ █ █▀▀ █▀▀ ▀█▀ ▄▀▀
+█▄▄ █▄█ █ ▀ █ █▀▀  ▄██ █▀█ ██▄ ██▄  █  ▄██</pre>
     <h1 class="visually-hidden">comp-sheets</h1>
     <div class="head-row">
       <p class="tagline dim">rename &amp; export competition entries<span class="cursor" aria-hidden="true">█</span></p>
