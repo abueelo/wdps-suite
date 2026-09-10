@@ -2,7 +2,7 @@
   import { imagesStore } from '../../lib/state/images.svelte.js';
   import { parseFilename } from '../../lib/parsing/filenameParser.js';
   import { collectFromDataTransferItems, filterAcceptedFiles } from '../../lib/upload/collectFiles.js';
-  import { listPayloads, IMAGE_SET_TYPE, RAW_ENTRY_SET_TYPE, type BusPayload } from '@wdps/shared-bus';
+  import { listPayloads, deletePayload, RAW_ENTRY_SET_TYPE, type BusPayload } from '@wdps/shared-bus';
   import type { ImageRecord } from '../../lib/types.js';
 
   let { onNext }: { onNext: () => void } = $props();
@@ -10,11 +10,27 @@
   let dragOver = $state(false);
   let busy = $state(false);
   let error = $state('');
-  let busPayloads = $state<BusPayload[]>([]);
 
+  // upload-portal's "move to comp-sheets" hands a competition's entries
+  // off on the bus and then navigates straight here — this picks that
+  // hand-off up and imports it immediately, no click required, and
+  // consumes it off the bus right away so it's only ever there for the
+  // one browser tab that navigation lands in, not for anyone who opens
+  // comp-sheets afterwards.
   $effect(() => {
-    listPayloads([IMAGE_SET_TYPE, RAW_ENTRY_SET_TYPE]).then((p) => (busPayloads = p));
+    autoImportFromUploadPortal();
   });
+
+  async function autoImportFromUploadPortal() {
+    const payload = (await listPayloads(RAW_ENTRY_SET_TYPE)).find((p) => p.sourceApp === 'upload-portal');
+    if (!payload) return;
+    try {
+      await importFromBus(payload);
+      onNext();
+    } finally {
+      await deletePayload(payload.id).catch(() => {});
+    }
+  }
 
   /** Photographer/title already known for a file (e.g. handed off from another app), keyed by File instance. */
   type KnownMeta = Map<File, { photographer: string; title: string }>;
@@ -141,21 +157,6 @@
   {/if}
 </section>
 
-{#if busPayloads.length > 0}
-  <section class="panel">
-    <h2><span class="bracket" aria-hidden="true">[ </span>from another wdps app<span class="bracket" aria-hidden="true"> ]</span></h2>
-    <ul class="bus-list">
-      {#each busPayloads as payload}
-        <li>
-          <span>{payload.label}</span>
-          <span class="dim">{payload.items.length} image{payload.items.length === 1 ? '' : 's'} · from {payload.sourceApp}</span>
-          <button class="btn" onclick={() => importFromBus(payload)}>import</button>
-        </li>
-      {/each}
-    </ul>
-  </section>
-{/if}
-
 <style>
   .dropzone {
     border: 1px dashed var(--border);
@@ -173,18 +174,5 @@
   }
   .btn input[hidden] {
     display: none;
-  }
-  .bus-list {
-    list-style: none;
-    margin-top: 0.75rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  .bus-list li {
-    display: flex;
-    align-items: center;
-    gap: 1ch;
-    flex-wrap: wrap;
   }
 </style>

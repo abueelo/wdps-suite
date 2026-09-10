@@ -125,10 +125,14 @@ export interface SuiteApp {
   acceptedTypes: string[];
 }
 
+// presenter no longer takes hand-offs on the bus — it pulls a competition
+// straight from upload-portal's own API instead (see
+// apps/presenter/src/lib/intake/uploadPortal.ts), so it's not listed as a
+// destination here.
 export const SUITE_APPS: SuiteApp[] = [
   { id: 'comp-sheets', name: 'comp-sheets', path: '/comp-sheets/', acceptedTypes: [IMAGE_SET_TYPE, RAW_ENTRY_SET_TYPE] },
   { id: 'upload-portal', name: 'upload-portal', path: '/upload-portal/admin.html', acceptedTypes: [] },
-  { id: 'presenter', name: 'presenter', path: '/presenter/', acceptedTypes: [IMAGE_SET_TYPE] }
+  { id: 'presenter', name: 'presenter', path: '/presenter/', acceptedTypes: [] }
 ];
 
 /** Other apps (excluding `excludeId`) that accept `type`. */

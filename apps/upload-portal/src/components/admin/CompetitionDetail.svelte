@@ -101,11 +101,12 @@
     busyAction = 'move';
     moveResult = '';
     try {
-      const count = await moveToCompSheets(competition, entries);
-      moveResult = `${count} image${count === 1 ? '' : 's'} sent — open comp-sheets to import them.`;
+      await moveToCompSheets(competition, entries);
+      // Straight into comp-sheets with the entries already loaded — no
+      // manual import step. See UploadStep.svelte's auto-import effect.
+      window.location.href = '/comp-sheets/';
     } catch (err) {
       moveResult = err instanceof Error ? err.message : 'failed to hand off to comp-sheets';
-    } finally {
       busyAction = '';
     }
   }
@@ -141,10 +142,10 @@
         disabled={competition.status !== 'locked' || busyAction === 'move' || entries.length === 0}
         title={competition.status !== 'locked' ? 'lock entries first' : ''}
       >
-        <span class="key" aria-hidden="true">[m]</span> {busyAction === 'move' ? 'sending…' : 'move to comp-sheets'}
+        <span class="key" aria-hidden="true">[m]</span> {busyAction === 'move' ? 'sending…' : 'open in comp-sheets'}
       </button>
     </p>
-    {#if moveResult}<p class="ok">{moveResult}</p>{/if}
+    {#if moveResult}<p class="danger">{moveResult}</p>{/if}
   </section>
 
   {#if entries.length === 0}
