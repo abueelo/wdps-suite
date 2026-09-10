@@ -1,9 +1,20 @@
 import { OWNER, getCookie, makeSessionCookie, secureFlag, appendLog } from '../_lib.js';
 
-const CONSOLE_PATH = '/upload-portal/owner.html';
+const RETURN_TARGETS = new Set(['/upload-portal/owner.html', '/presenter/']);
+const DEFAULT_RETURN = '/upload-portal/owner.html';
 
-function bounce(location, extraHeaders = {}) {
-  return new Response(null, { status: 302, headers: { Location: location, ...extraHeaders } });
+function clearCookies(request) {
+  const flag = secureFlag(request);
+  return [
+    `oauth_state=; HttpOnly;${flag} SameSite=Lax; Path=/; Max-Age=0`,
+    `owner_return_to=; HttpOnly;${flag} SameSite=Lax; Path=/; Max-Age=0`
+  ];
+}
+
+function bounce(location, cookies) {
+  const headers = new Headers({ Location: location });
+  for (const cookie of cookies) headers.append('Set-Cookie', cookie);
+  return new Response(null, { status: 302, headers });
 }
 
 export async function onRequestGet({ request, env }) {
@@ -11,10 +22,11 @@ export async function onRequestGet({ request, env }) {
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
   const savedState = getCookie(request, 'oauth_state');
-  const clearState = `oauth_state=; HttpOnly;${secureFlag(request)} SameSite=Lax; Path=/; Max-Age=0`;
+  const savedReturnTo = getCookie(request, 'owner_return_to');
+  const returnTo = RETURN_TARGETS.has(savedReturnTo) ? savedReturnTo : DEFAULT_RETURN;
 
   if (!code || !state || !savedState || state !== savedState) {
-    return bounce(`${CONSOLE_PATH}#error-state`, { 'Set-Cookie': clearState });
+    return bounce(`${returnTo}#error-state`, clearCookies(request));
   }
 
   const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
@@ -29,7 +41,7 @@ export async function onRequestGet({ request, env }) {
   });
   const tokenBody = await tokenRes.json();
   if (!tokenBody.access_token) {
-    return bounce(`${CONSOLE_PATH}#error-token`, { 'Set-Cookie': clearState });
+    return bounce(`${returnTo}#error-token`, clearCookies(request));
   }
 
   const userRes = await fetch('https://api.github.com/user', {
@@ -41,17 +53,17 @@ export async function onRequestGet({ request, env }) {
   });
   const userBody = await userRes.json();
   if (!userBody.login) {
-    return bounce(`${CONSOLE_PATH}#error-user`, { 'Set-Cookie': clearState });
+    return bounce(`${returnTo}#error-user`, clearCookies(request));
   }
 
   if (userBody.login !== OWNER) {
     await appendLog(env, 'owner.login.denied', userBody.login);
-    return bounce(`${CONSOLE_PATH}#denied`, { 'Set-Cookie': clearState });
+    return bounce(`${returnTo}#denied`, clearCookies(request));
   }
 
   await appendLog(env, 'owner.login.success');
-  const headers = new Headers({ Location: CONSOLE_PATH });
-  headers.append('Set-Cookie', clearState);
+  const headers = new Headers({ Location: returnTo });
+  for (const cookie of clearCookies(request)) headers.append('Set-Cookie', cookie);
   headers.append('Set-Cookie', await makeSessionCookie(request, env, 'owner'));
   return new Response(null, { status: 302, headers });
 }

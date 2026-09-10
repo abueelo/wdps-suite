@@ -1,0 +1,7 @@
+/* App-specific tweaks beyond the shared terminal design system. */
+
+.name {
+  font-size: 1.75rem;
+  letter-spacing: 0.05em;
+  margin: 0;
+}

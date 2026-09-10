@@ -19,7 +19,8 @@ toggle.addEventListener('click', () => {
 bindShortcuts({
   t: () => toggle.click(),
   c: () => { window.location.href = '/comp-sheets/'; },
-  u: () => { window.location.href = '/upload-portal/'; }
+  u: () => { window.location.href = '/upload-portal/'; },
+  p: () => { window.location.href = '/presenter/'; }
 });
 
 setFooterYear();

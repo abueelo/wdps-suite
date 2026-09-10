@@ -16,7 +16,8 @@ const distRoot = path.join(root, 'dist');
 const apps = [
   { name: 'hub', dir: 'apps/hub', outSubdir: '' },
   { name: 'comp-sheets', dir: 'apps/comp-sheets', outSubdir: 'comp-sheets' },
-  { name: 'upload-portal', dir: 'apps/upload-portal', outSubdir: 'upload-portal' }
+  { name: 'upload-portal', dir: 'apps/upload-portal', outSubdir: 'upload-portal' },
+  { name: 'presenter', dir: 'apps/presenter', outSubdir: 'presenter' }
 ];
 
 rmSync(distRoot, { recursive: true, force: true });

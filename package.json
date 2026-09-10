@@ -11,11 +11,13 @@
     "dev:comp-sheets": "npm run dev -w apps/comp-sheets",
     "dev:hub": "npm run dev -w apps/hub",
     "dev:upload-portal": "npm run dev -w apps/upload-portal",
+    "dev:presenter": "npm run dev -w apps/presenter",
     "build": "node scripts/build.mjs",
     "build:comp-sheets": "npm run build -w apps/comp-sheets",
     "build:hub": "npm run build -w apps/hub",
     "build:upload-portal": "npm run build -w apps/upload-portal",
-    "check": "npm run check -w apps/comp-sheets && npm run check -w apps/upload-portal"
+    "build:presenter": "npm run build -w apps/presenter",
+    "check": "npm run check -w apps/comp-sheets && npm run check -w apps/upload-portal && npm run check -w apps/presenter"
   },
   "engines": {
     "node": ">=18.17.0"
