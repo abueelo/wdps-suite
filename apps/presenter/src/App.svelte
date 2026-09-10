@@ -27,6 +27,13 @@
 
   let session = $derived(sessionStore.current);
   let currentImage = $derived(session.images.find((i) => i.id === session.currentImageId) ?? null);
+  let ratedCount = $derived(session.images.filter((i) => i.rating !== null).length);
+  let heldCount = $derived(session.images.filter((i) => i.held).length);
+  let progressLabel = $derived(
+    session.images.length === 0
+      ? ''
+      : `${ratedCount} / ${session.images.length} rated${heldCount > 0 ? ` · ${heldCount} held back` : ''}`
+  );
 
   function visibleOrdered(): PresenterImage[] {
     return [...session.images].sort((a, b) => a.order - b.order).filter((i) => !showHeldOnly || i.held);
@@ -54,6 +61,16 @@
       const img = s.images.find((i) => i.id === id);
       if (img) img.rating = rating;
     });
+  }
+
+  // Fires once a typed score is *committed* (Enter or leaving the field) —
+  // not on every keystroke, which setRating above already handles for the
+  // live display. Advancing on every keystroke would jump to the next
+  // image after typing just the "1" of "17".
+  function commitRating() {
+    const id = session.currentImageId;
+    const img = session.images.find((i) => i.id === id);
+    if (img?.rating !== null) step(1);
   }
 
   function toggleHold() {
@@ -119,6 +136,22 @@
     await sessionStore.replace(emptySession());
     confirmClear = false;
   }
+
+  // Warns before leaving the page at all — closing/refreshing the tab,
+  // or clicking the [h] home link, which is just a same-tab navigation
+  // and triggers this the same way. Ratings autosave to IndexedDB as you
+  // go, so a refresh alone is already safe; this is really about not
+  // walking away from the laptop mid-competition without having exported
+  // anything, or opening the show on a different machine by accident.
+  $effect(() => {
+    function handler(e: BeforeUnloadEvent) {
+      if (session.images.length === 0) return;
+      e.preventDefault();
+      e.returnValue = '';
+    }
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  });
 
   $effect(() => {
     return bindShortcuts({
@@ -231,7 +264,16 @@
         </div>
 
         <div class="col-main">
-          <PreviewPane image={currentImage} onRate={setRating} onToggleHold={toggleHold} bind:ratingInputEl={ratingInputEl} />
+          <PreviewPane
+            image={currentImage}
+            {progressLabel}
+            onRate={setRating}
+            onRateCommit={commitRating}
+            onToggleHold={toggleHold}
+            onPrev={() => step(-1)}
+            onNext={() => step(1)}
+            bind:ratingInputEl={ratingInputEl}
+          />
 
           {@render slidesDetails()}
 

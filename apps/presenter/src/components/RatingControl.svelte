@@ -2,10 +2,13 @@
   let {
     rating,
     onChange,
+    onCommit,
     inputEl = $bindable<HTMLInputElement | undefined>(undefined)
   }: {
     rating: number | null;
     onChange: (value: number | null) => void;
+    /** Fires once a typed score is committed (Enter, or the field losing focus) — not on every keystroke. */
+    onCommit?: () => void;
     inputEl?: HTMLInputElement;
   } = $props();
 
@@ -42,11 +45,27 @@
     if (Number.isNaN(n)) return;
     onChange(Math.max(1, Math.min(20, n)));
   }
+
+  function handleKeydown(e: KeyboardEvent) {
+    // Enter commits the score the same way tabbing away does, without
+    // needing an extra click — blur() triggers the change handler below.
+    if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur();
+  }
 </script>
 
 <div class="rating-control">
   <label for="rating-input">score</label>
-  <input id="rating-input" bind:this={el} type="number" min="1" max="20" placeholder="—" oninput={handleInput} />
+  <input
+    id="rating-input"
+    bind:this={el}
+    type="number"
+    min="1"
+    max="20"
+    placeholder="—"
+    oninput={handleInput}
+    onkeydown={handleKeydown}
+    onchange={() => onCommit?.()}
+  />
   <span class="dim">/ 20</span>
   {#if rating !== null}
     <button type="button" class="btn" onclick={() => onChange(null)}>clear</button>

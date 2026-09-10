@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PresenterImage } from '../lib/types.js';
+  import Thumbnail from './Thumbnail.svelte';
 
   let {
     images,
@@ -28,6 +29,7 @@
         onclick={() => onSelect(img.id)}
         aria-current={img.id === currentImageId ? 'true' : undefined}
       >
+        <Thumbnail blob={img.blob} filename={img.filename} />
         <span class="name">{img.title || img.filename}</span>
         {#if img.photographer}<span class="dim photographer">{img.photographer}</span>{/if}
         <span class="badges">
@@ -53,7 +55,7 @@
   }
   .row {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 1ch;
     width: 100%;
     text-align: left;
