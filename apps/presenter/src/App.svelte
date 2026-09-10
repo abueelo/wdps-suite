@@ -326,11 +326,11 @@
       l: () => setScene('photo'),
       v: () => toggleRevealTitle(),
       c: () => toggleRevealPhotographer(),
-      x: () => toggleRevealFlashOnly(),
+      q: () => toggleRevealFlashOnly(),
       w: () => toggleBorder(),
       o: () => (sortByScore = !sortByScore),
       g: () => showWinner(),
-      q: () => {
+      x: () => {
         if (authState === 'in') void logout();
       },
       p: () => {
@@ -357,7 +357,7 @@
       <nav class="bracket-nav" aria-label="theme and suite">
         <a href="/" onclick={() => displayWindowRef?.close()}><span class="key" aria-hidden="true">[h]</span> wdps</a>
         {#if authState === 'in'}
-          <button type="button" onclick={() => void logout()}><span class="key" aria-hidden="true">[q]</span> log out</button>
+          <button type="button" onclick={() => void logout()}><span class="key" aria-hidden="true">[x]</span> log out</button>
         {/if}
         <ThemeToggle />
       </nav>

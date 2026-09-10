@@ -34,7 +34,7 @@
     </label>
     <label>
       <input type="checkbox" checked={revealFlashOnly} onchange={onToggleRevealFlashOnly} />
-      <span class="key" aria-hidden="true">[x]</span> only show briefly when switching image
+      <span class="key" aria-hidden="true">[q]</span> only show briefly when switching image
     </label>
     <label>
       <input type="checkbox" checked={borderGuide} onchange={onToggleBorder} />
