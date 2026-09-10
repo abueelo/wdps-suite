@@ -1,12 +1,18 @@
 <script lang="ts">
-  import type { Competition } from '../../lib/types.js';
+  import type { Competition, Entry } from '../../lib/types.js';
   import { filterAcceptedFiles } from '../../lib/upload/collectFiles.js';
   import { decodeForUpload } from '../../lib/upload/thumbnail.js';
   import { guessTitle } from '../../lib/upload/guessTitle.js';
-  import { uploadEntry } from '../../lib/api/client.js';
+  import { listMyEntries, uploadEntry, deleteMyEntry } from '../../lib/api/client.js';
   import { ConfirmModal } from '@wdps/shared-ui';
+  import MyEntryCard from './MyEntryCard.svelte';
 
-  let { competition, onBack }: { competition: Competition; onBack: () => void } = $props();
+  let {
+    competition,
+    photographer,
+    onBack,
+    onChangeName
+  }: { competition: Competition; photographer: string; onBack: () => void; onChangeName: () => void } = $props();
 
   interface Row {
     id: string;
@@ -17,28 +23,43 @@
     // is typed after files were already dropped, without ever
     // clobbering something the member actually typed themselves.
     titleAuto: boolean;
-    status: 'pending' | 'uploading' | 'done' | 'error';
+    status: 'pending' | 'uploading' | 'error';
     error?: string;
     thumbnailUrl?: string;
     decoded?: { width: number; height: number; thumbnail: Blob };
     decodeFailed?: boolean;
   }
 
-  // One name for the whole session rather than re-typing it per image —
-  // a member is almost always uploading their own batch in one sitting.
-  let photographer = $state('');
-
-  // Requires a first AND last name — a bare first name isn't enough to
-  // credit someone in a competition, and this is the cheapest nudge
-  // toward getting both without maintaining a member roster.
-  function isFullName(name: string): boolean {
-    return name.trim().split(/\s+/).filter(Boolean).length >= 2;
-  }
   let rows = $state<Row[]>([]);
   let dragOver = $state(false);
   let dragging = $state<string | null>(null);
   let collecting = $state(false);
   let submitting = $state(false);
+
+  // What this member has already submitted to this competition, fetched
+  // from the server rather than kept in session-only state — this is what
+  // makes uploads visible (and removable) across visits. Seeded from the
+  // `competition` prop so "still open" doesn't flicker false while loading.
+  let existingEntries = $state<Entry[]>([]);
+  let loadingExisting = $state(true);
+  let existingError = $state('');
+  let liveCompetition = $state<Competition>(competition);
+  let canDelete = $derived(liveCompetition.status === 'open');
+
+  $effect(() => {
+    (async () => {
+      loadingExisting = true;
+      try {
+        const res = await listMyEntries(competition.id, photographer);
+        liveCompetition = res.competition;
+        existingEntries = res.entries;
+      } catch (err) {
+        existingError = err instanceof Error ? err.message : 'failed to load your uploads';
+      } finally {
+        loadingExisting = false;
+      }
+    })();
+  });
 
   // Plain (non-reactive) list of object URLs created for thumbnails, so
   // they can all be revoked on unmount without re-running on every
@@ -50,13 +71,12 @@
     };
   });
 
-  // Re-guesses every still-untouched title whenever the name changes —
-  // covers dropping files before typing a name, same as typing it after.
+  // Re-guesses every still-untouched title — covers dropping files before
+  // the guess has anything to work with beyond the filename.
   $effect(() => {
-    const name = photographer;
     for (const row of rows) {
       if (row.titleAuto) {
-        const guessed = guessTitle(row.file.name, name);
+        const guessed = guessTitle(row.file.name, photographer);
         if (row.title !== guessed) row.title = guessed;
       }
     }
@@ -65,21 +85,11 @@
   // 'error' counts as ready too, matching uploadAll()'s own retry condition —
   // otherwise a failed row locks the button at 0 with no way to retry it.
   let readyCount = $derived(rows.filter((r) => (r.status === 'pending' || r.status === 'error') && r.title.trim()).length);
-  let doneCount = $derived(rows.filter((r) => r.status === 'done').length);
   let untitledCount = $derived(rows.filter((r) => (r.status === 'pending' || r.status === 'error') && !r.title.trim()).length);
 
-  // Mirrors the button's own disabled condition, in the same order it
-  // checks things — a name-check that ran after a readyCount check meant
-  // a batch with a title already filled in could still show no reason
-  // at all while the button sat disabled for a still-empty name field.
   let disabledReason = $derived.by(() => {
     if (submitting) return '';
-    if (!photographer.trim()) return 'type your full name above first';
-    if (!isFullName(photographer)) return 'include your last name too';
-    if (readyCount === 0) {
-      if (untitledCount > 0) return `give ${untitledCount === 1 ? 'that image' : 'each image'} a title first`;
-      return '';
-    }
+    if (readyCount === 0 && untitledCount > 0) return `give ${untitledCount === 1 ? 'that image' : 'each image'} a title first`;
     return '';
   });
 
@@ -151,7 +161,6 @@
   }
 
   async function uploadAll() {
-    if (!isFullName(photographer)) return;
     submitting = true;
     try {
       for (const row of rows) {
@@ -164,13 +173,17 @@
           const form = new FormData();
           form.set('original', row.file);
           form.set('thumbnail', decoded.thumbnail, 'thumbnail.jpg');
-          form.set('photographer', photographer.trim());
+          form.set('photographer', photographer);
           form.set('title', row.title.trim());
           form.set('filename', row.file.name);
           form.set('width', String(decoded.width));
           form.set('height', String(decoded.height));
-          await uploadEntry(competition.id, form);
-          row.status = 'done';
+          const uploaded = await uploadEntry(competition.id, form);
+          // Moves straight into the "already uploaded" list rather than
+          // sitting in `rows` with a 'done' status — that list is the one
+          // source of truth for anything the server actually has.
+          existingEntries = [...existingEntries, uploaded];
+          rows = rows.filter((r) => r.id !== row.id);
         } catch (err) {
           row.status = 'error';
           row.error = err instanceof Error ? err.message : 'upload failed';
@@ -180,17 +193,49 @@
       submitting = false;
     }
   }
+
+  let pendingDeleteEntry = $state<Entry | null>(null);
+  let deleteBusy = $state(false);
+  let deleteError = $state('');
+
+  async function confirmDeleteEntry() {
+    if (!pendingDeleteEntry) return;
+    deleteBusy = true;
+    deleteError = '';
+    try {
+      await deleteMyEntry(competition.id, pendingDeleteEntry.id, photographer);
+      existingEntries = existingEntries.filter((e) => e.id !== pendingDeleteEntry!.id);
+      pendingDeleteEntry = null;
+    } catch (err) {
+      deleteError = err instanceof Error ? err.message : 'failed to remove';
+    } finally {
+      deleteBusy = false;
+    }
+  }
 </script>
 
 <section class="panel">
   <h2><span class="bracket" aria-hidden="true">[ </span>{competition.name}<span class="bracket" aria-hidden="true"> ]</span></h2>
   <button type="button" class="btn back-link" onclick={onBack}>&larr; pick a different competition</button>
 
-  <label class="field">
-    <span>your <span class="field-label">full name</span></span>
-    <input type="text" bind:value={photographer} placeholder="John Doe" autocomplete="off" />
-  </label>
-  <p class="dim name-hint">first and last name please, so entries can be credited correctly</p>
+  <p class="dim name-line">
+    uploading as <strong>{photographer}</strong> —
+    <button type="button" class="btn change-name-btn" onclick={onChangeName}>not you?</button>
+  </p>
+
+  {#if loadingExisting}
+    <p class="dim">loading your uploads…</p>
+  {:else if existingError}
+    <p class="danger">{existingError}</p>
+  {:else if existingEntries.length > 0}
+    <h3 class="section-title">your uploads so far</h3>
+    <div class="existing-grid">
+      {#each existingEntries as entry (entry.id)}
+        <MyEntryCard {entry} {canDelete} onRequestDelete={(e) => (pendingDeleteEntry = e)} />
+      {/each}
+    </div>
+    {#if deleteError}<p class="danger">{deleteError}</p>{/if}
+  {/if}
 
   <div
     class="dropzone"
@@ -227,7 +272,6 @@
       {#each rows as row (row.id)}
         {@const editable = row.status === 'pending' || row.status === 'error'}
         <li
-          class:done={row.status === 'done'}
           class:dragging={dragging === row.id}
           ondragover={(e) => e.preventDefault()}
           ondrop={(e) => { e.preventDefault(); if (dragging) reorderRow(dragging, row.id); dragging = null; }}
@@ -257,9 +301,7 @@
             placeholder="title"
             disabled={!editable}
           />
-          {#if row.status === 'done'}
-            <span class="ok row-status">uploaded</span>
-          {:else if row.status === 'uploading'}
+          {#if row.status === 'uploading'}
             <span class="dim row-status">uploading…</span>
           {:else}
             <button type="button" class="btn remove-btn row-status" onclick={() => (pendingRemove = row)} aria-label="remove">×</button>
@@ -270,10 +312,9 @@
     </ul>
 
     {#if disabledReason}<p class="warn upload-warn">{disabledReason}</p>{/if}
-    <button class="btn primary" onclick={uploadAll} disabled={submitting || readyCount === 0 || !isFullName(photographer)}>
+    <button class="btn primary" onclick={uploadAll} disabled={submitting || readyCount === 0}>
       {submitting ? 'uploading…' : `upload and submit ${readyCount} image${readyCount === 1 ? '' : 's'}`}
     </button>
-    {#if doneCount > 0}<p class="ok">{doneCount} uploaded so far.</p>{/if}
   {/if}
 </section>
 
@@ -283,6 +324,15 @@
     confirmLabel="remove"
     onConfirm={confirmRemoveRow}
     onCancel={() => (pendingRemove = null)}
+  />
+{/if}
+
+{#if pendingDeleteEntry}
+  <ConfirmModal
+    message={`Remove "${pendingDeleteEntry.title}" from the competition? This can't be undone.`}
+    confirmLabel={deleteBusy ? 'removing…' : 'remove'}
+    onConfirm={confirmDeleteEntry}
+    onCancel={() => (pendingDeleteEntry = null)}
   />
 {/if}
 
@@ -298,21 +348,23 @@
     border-color: transparent;
     padding-left: 0;
   }
-  .field {
-    display: flex;
-    align-items: center;
-    gap: 1ch;
+  .name-line {
     margin-top: 1.25rem;
   }
-  .field input {
-    width: var(--field-width);
+  .change-name-btn {
+    border-color: transparent;
+    padding: 0;
+    text-decoration: underline;
   }
-  .field-label {
-    font-weight: bold;
+  .section-title {
+    margin-top: 1.5rem;
+    font-size: 1em;
   }
-  .name-hint {
-    margin-top: 0.35rem;
-    font-size: 0.85em;
+  .existing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    gap: 1rem;
+    margin-top: 0.75rem;
   }
   .dropzone {
     border: 1px dashed var(--border);
@@ -367,10 +419,6 @@
   }
   .row-list li.dragging > * {
     opacity: 0.4;
-  }
-  .row-list li.done > * {
-    opacity: 0.6;
-    cursor: default;
   }
   .drag-handle {
     grid-column: 1;

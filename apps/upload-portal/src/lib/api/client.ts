@@ -55,6 +55,20 @@ export const setEntryExcluded = (competitionId: string, entryId: string, exclude
 export const deleteEntry = (competitionId: string, entryId: string) =>
   request<{ ok: true }>(`/api/competition/${competitionId}/entry/${entryId}`, { method: 'DELETE' });
 
+// Member-facing versions, scoped to a photographer name rather than admin
+// auth — there's no member login, so the name typed on the name step is
+// the only handle a member has on "my uploads".
+export const listMyEntries = (competitionId: string, photographer: string) =>
+  request<{ competition: Competition; entries: Entry[] }>(
+    `/api/competition/${competitionId}/entries?photographer=${encodeURIComponent(photographer)}`
+  );
+
+export const deleteMyEntry = (competitionId: string, entryId: string, photographer: string) =>
+  request<{ ok: true }>(
+    `/api/competition/${competitionId}/entry/${entryId}?photographer=${encodeURIComponent(photographer)}`,
+    { method: 'DELETE' }
+  );
+
 // -- owner --
 
 export const ownerMe = () => request<{ authed: boolean }>('/api/owner-me');

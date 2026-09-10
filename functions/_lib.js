@@ -229,3 +229,12 @@ export function entryImageKey(competitionId, entryId, kind) {
 }
 
 export const ENTRY_IMAGE_KEY_RE = /^entry-[a-z0-9-]{1,60}-(orig|thumb)$/;
+
+export const PHOTOGRAPHER_MAX_LEN = 120;
+
+// The only "identity" a member has is the name they type on upload — this
+// is how a non-admin caller's "my uploads" list/delete requests are scoped,
+// so it needs to match regardless of case or stray whitespace.
+export function samePhotographer(a, b) {
+  return typeof a === 'string' && typeof b === 'string' && a.trim().toLowerCase() === b.trim().toLowerCase();
+}

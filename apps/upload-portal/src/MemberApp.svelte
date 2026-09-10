@@ -2,9 +2,11 @@
   import { ThemeToggle } from '@wdps/shared-ui';
   import { bindShortcuts } from '@wdps/shared-ui/shortcuts';
   import { getSettings, listCompetitions, memberLogin } from './lib/api/client.js';
+  import { loadSavedName, saveName } from './lib/member/name.js';
   import type { Competition } from './lib/types.js';
   import PasscodeGate from './components/PasscodeGate.svelte';
   import CompetitionPicker from './components/member/CompetitionPicker.svelte';
+  import NameStep from './components/member/NameStep.svelte';
   import UploadForm from './components/member/UploadForm.svelte';
 
   const GATE_PASSED_KEY = 'wdps-upload-portal-member-passed';
@@ -15,6 +17,12 @@
   let competitions = $state<Competition[]>([]);
   let selected = $state<Competition | null>(null);
   let error = $state('');
+
+  // Confirmed once per app load, pre-filled from whatever name was last
+  // used on this browser — so a returning member doesn't retype it, but
+  // it's still its own step rather than folded into the upload screen.
+  let photographerName = $state(loadSavedName());
+  let nameConfirmed = $state(false);
 
   $effect(() => {
     (async () => {
@@ -71,8 +79,14 @@
     <PasscodeGate title="members only" description="enter the club passcode to submit entries." onSubmit={submitPasscode} />
   {:else if !selected}
     <CompetitionPicker {competitions} onPick={(c) => (selected = c)} />
+  {:else if !nameConfirmed}
+    <NameStep
+      initialName={photographerName}
+      onBack={() => (selected = null)}
+      onConfirm={(name) => { photographerName = name; saveName(name); nameConfirmed = true; }}
+    />
   {:else}
-    <UploadForm competition={selected} onBack={() => (selected = null)} />
+    <UploadForm competition={selected} photographer={photographerName} onBack={() => (selected = null)} onChangeName={() => (nameConfirmed = false)} />
   {/if}
 
   <footer class="suite-footer">

@@ -8,6 +8,8 @@ import {
   familyForExt,
   contentTypeForFamily,
   sniffEntryFormat,
+  samePhotographer,
+  PHOTOGRAPHER_MAX_LEN,
   appendLog,
   json
 } from '../../../_lib.js';
@@ -16,7 +18,7 @@ const COMPETITIONS_KEY = 'competitions';
 const MAX_ORIGINAL_BYTES = 60 * 1024 * 1024;
 const MAX_THUMBNAIL_BYTES = 2 * 1024 * 1024;
 const MAX_ENTRIES_PER_COMPETITION = 500;
-const MAX_LEN = { photographer: 120, title: 120, filename: 200 };
+const MAX_LEN = { photographer: PHOTOGRAPHER_MAX_LEN, title: 120, filename: 200 };
 
 function entriesKeyFor(competitionId) {
   return `entries:${competitionId}`;
@@ -27,8 +29,20 @@ async function loadCompetitions(env) {
 }
 
 export async function onRequestGet({ request, env, params }) {
-  if (!(await requireAdmin(request, env))) {
-    return json({ error: 'not authorised' }, { status: 401 });
+  // Admin sees every entry. A non-admin caller only ever sees the entries
+  // matching a photographer name they supply — there's no per-member login
+  // to scope this by, so the typed name is the only handle a member has on
+  // "my uploads".
+  const admin = await requireAdmin(request, env);
+  let photographer = null;
+  if (!admin) {
+    if (!(await requireMemberOrAdmin(request, env))) {
+      return json({ error: 'not authorised' }, { status: 401 });
+    }
+    photographer = new URL(request.url).searchParams.get('photographer')?.trim().slice(0, PHOTOGRAPHER_MAX_LEN) || '';
+    if (!photographer) {
+      return json({ error: 'photographer is required' }, { status: 400 });
+    }
   }
   if (!validId(params.id)) {
     return json({ error: 'invalid id' }, { status: 400 });
@@ -36,7 +50,10 @@ export async function onRequestGet({ request, env, params }) {
   const competition = (await loadCompetitions(env)).find((c) => c.id === params.id);
   if (!competition) return json({ error: 'not found' }, { status: 404 });
 
-  const entries = (await env.COMPETITIONS_KV.get(entriesKeyFor(params.id), 'json')) || [];
+  let entries = (await env.COMPETITIONS_KV.get(entriesKeyFor(params.id), 'json')) || [];
+  if (!admin) {
+    entries = entries.filter((e) => samePhotographer(e.photographer, photographer));
+  }
   const withUrls = entries.map((e) => ({
     ...e,
     thumbnailUrl: `/api/entry-image/${entryImageKey(params.id, e.id, 'thumb')}`,
@@ -134,5 +151,9 @@ export async function onRequestPost({ request, env, params }) {
   await env.COMPETITIONS_KV.put(COMPETITIONS_KEY, JSON.stringify(all));
   await appendLog(env, 'entry.upload', `${title} — ${photographer} (${competition.name})`);
 
-  return json(entry);
+  return json({
+    ...entry,
+    thumbnailUrl: `/api/entry-image/${entryImageKey(params.id, entryId, 'thumb')}`,
+    originalUrl: `/api/entry-image/${entryImageKey(params.id, entryId, 'orig')}`
+  });
 }

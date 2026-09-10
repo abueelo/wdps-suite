@@ -1,7 +1,9 @@
-import { requireAdmin, ENTRY_IMAGE_KEY_RE, json } from '../../_lib.js';
+import { requireMemberOrAdmin, ENTRY_IMAGE_KEY_RE, json } from '../../_lib.js';
 
 export async function onRequestGet({ request, env, params }) {
-  if (!(await requireAdmin(request, env))) {
+  // Members now fetch their own entries' images too (their "my uploads"
+  // list), so this needs the same gate as .../entries rather than admin-only.
+  if (!(await requireMemberOrAdmin(request, env))) {
     return json({ error: 'not authorised' }, { status: 401 });
   }
   if (!ENTRY_IMAGE_KEY_RE.test(params.key)) {
