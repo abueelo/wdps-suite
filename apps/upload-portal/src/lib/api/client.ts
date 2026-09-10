@@ -45,8 +45,35 @@ export const deleteCompetition = (id: string) => request<{ ok: true }>(`/api/com
 export const listEntries = (competitionId: string) =>
   request<{ competition: Competition; entries: Entry[] }>(`/api/competition/${competitionId}/entries`);
 
-export function uploadEntry(competitionId: string, form: FormData) {
-  return request<Entry>(`/api/competition/${competitionId}/entries`, { method: 'POST', body: form });
+// XMLHttpRequest rather than fetch() here — fetch has no cross-browser way
+// to report upload progress for a FormData body, and these can be sizeable
+// TIFFs, so `onProgress` (0-1) is how the upload form drives its progress
+// bar per file.
+export function uploadEntry(competitionId: string, form: FormData, onProgress?: (fraction: number) => void): Promise<Entry> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `/api/competition/${competitionId}/entries`);
+    xhr.withCredentials = true;
+    xhr.upload.onprogress = (e) => {
+      if (onProgress && e.lengthComputable) onProgress(e.loaded / e.total);
+    };
+    xhr.onload = () => {
+      let body: unknown = null;
+      try {
+        body = JSON.parse(xhr.responseText);
+      } catch {
+        // non-JSON body — fall through to the status check below
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(body as Entry);
+      } else {
+        const error = body && typeof body === 'object' && 'error' in body ? String((body as { error: unknown }).error) : null;
+        reject(new Error(error || `request failed: ${xhr.status}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error('network error'));
+    xhr.send(form);
+  });
 }
 
 export const setEntryExcluded = (competitionId: string, entryId: string, excluded: boolean) =>

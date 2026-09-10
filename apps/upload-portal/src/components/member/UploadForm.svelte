@@ -25,6 +25,8 @@
     titleAuto: boolean;
     status: 'pending' | 'uploading' | 'error';
     error?: string;
+    // 0-100, bytes-uploaded progress while status is 'uploading'.
+    progress: number;
     thumbnailUrl?: string;
     decoded?: { width: number; height: number; thumbnail: Blob };
     decodeFailed?: boolean;
@@ -87,6 +89,11 @@
   let readyCount = $derived(rows.filter((r) => (r.status === 'pending' || r.status === 'error') && r.title.trim()).length);
   let untitledCount = $derived(rows.filter((r) => (r.status === 'pending' || r.status === 'error') && !r.title.trim()).length);
 
+  // Tracked separately from `submitting` so the button can say how far
+  // through a multi-file batch it is, not just that it's busy.
+  let uploadTotal = $state(0);
+  let uploadDone = $state(0);
+
   let disabledReason = $derived.by(() => {
     if (submitting) return '';
     if (readyCount === 0 && untitledCount > 0) return `give ${untitledCount === 1 ? 'that image' : 'each image'} a title first`;
@@ -112,7 +119,7 @@
       const newIds = accepted.map(() => crypto.randomUUID());
       rows = [
         ...rows,
-        ...accepted.map((file, i): Row => ({ id: newIds[i], file, title: guessTitle(file.name, photographer), titleAuto: true, status: 'pending' }))
+        ...accepted.map((file, i): Row => ({ id: newIds[i], file, title: guessTitle(file.name, photographer), titleAuto: true, status: 'pending', progress: 0 }))
       ];
       // Re-read the just-added rows back out of `rows` rather than closing
       // over the plain objects built above — $state deeply proxies on
@@ -162,12 +169,15 @@
 
   async function uploadAll() {
     submitting = true;
+    uploadTotal = readyCount;
+    uploadDone = 0;
     try {
       for (const row of rows) {
         if (row.status !== 'pending' && row.status !== 'error') continue;
         if (!row.title.trim()) continue;
 
         row.status = 'uploading';
+        row.progress = 0;
         try {
           const decoded = row.decoded ?? (await decodeForUpload(row.file));
           const form = new FormData();
@@ -178,7 +188,9 @@
           form.set('filename', row.file.name);
           form.set('width', String(decoded.width));
           form.set('height', String(decoded.height));
-          const uploaded = await uploadEntry(competition.id, form);
+          const uploaded = await uploadEntry(competition.id, form, (fraction) => {
+            row.progress = Math.round(fraction * 100);
+          });
           // Moves straight into the "already uploaded" list rather than
           // sitting in `rows` with a 'done' status — that list is the one
           // source of truth for anything the server actually has.
@@ -187,6 +199,8 @@
         } catch (err) {
           row.status = 'error';
           row.error = err instanceof Error ? err.message : 'upload failed';
+        } finally {
+          uploadDone++;
         }
       }
     } finally {
@@ -302,7 +316,10 @@
             disabled={!editable}
           />
           {#if row.status === 'uploading'}
-            <span class="dim row-status">uploading…</span>
+            <div class="progress-bar row-status" role="progressbar" aria-valuenow={row.progress} aria-valuemin="0" aria-valuemax="100">
+              <div class="progress-fill" style={`width: ${row.progress}%`}></div>
+              <span class="progress-label">{row.progress}%</span>
+            </div>
           {:else}
             <button type="button" class="btn remove-btn row-status" onclick={() => (pendingRemove = row)} aria-label="remove">×</button>
           {/if}
@@ -312,6 +329,12 @@
     </ul>
 
     {#if disabledReason}<p class="warn upload-warn">{disabledReason}</p>{/if}
+    {#if submitting}
+      <div class="progress-bar batch-progress" role="progressbar" aria-valuenow={uploadDone} aria-valuemin="0" aria-valuemax={uploadTotal}>
+        <div class="progress-fill" style={`width: ${uploadTotal ? (uploadDone / uploadTotal) * 100 : 0}%`}></div>
+        <span class="progress-label">uploading {Math.min(uploadDone + 1, uploadTotal)} of {uploadTotal}…</span>
+      </div>
+    {/if}
     <button class="btn primary" onclick={uploadAll} disabled={submitting || readyCount === 0}>
       {submitting ? 'uploading…' : `upload and submit ${readyCount} image${readyCount === 1 ? '' : 's'}`}
     </button>
@@ -471,5 +494,36 @@
     font-size: 1.2em;
     line-height: 1;
     padding: 0.2em 0.7em;
+  }
+  .progress-bar {
+    position: relative;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .progress-fill {
+    position: absolute;
+    inset: 0;
+    width: 0%;
+    background: var(--amber);
+    opacity: 0.3;
+    transition: width 0.1s linear;
+  }
+  .progress-label {
+    position: relative;
+    display: block;
+    text-align: center;
+    font-size: 0.75em;
+    line-height: 1.6;
+    white-space: nowrap;
+  }
+  .row-status.progress-bar {
+    width: 5rem;
+  }
+  .batch-progress {
+    margin-top: 1.25rem;
+  }
+  .batch-progress .progress-label {
+    font-size: 0.85em;
+    line-height: 1.8;
   }
 </style>
