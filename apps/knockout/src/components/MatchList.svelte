@@ -60,7 +60,7 @@
             disabled={!ready}
             onclick={() => onSelect(m.id)}
           >
-            <span class="slot" class:winner={m.winnerId === m.a}>{name(contestantA)}</span>
+            <span class="slot" class:winner={m.winnerId !== null && m.winnerId === m.a}>{name(contestantA)}</span>
             <span class="vs dim">{m.bye ? 'bye' : 'vs'}</span>
             <span class="slot" class:winner={m.winnerId !== null && m.winnerId === m.b}>{m.bye ? '—' : name(contestantB)}</span>
           </button>
