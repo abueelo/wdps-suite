@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import type { Competition, Entry } from '../../lib/types.js';
   import { filterAcceptedFiles } from '../../lib/upload/collectFiles.js';
   import { decodeForUpload } from '../../lib/upload/thumbnail.js';
@@ -45,6 +46,7 @@
   let existingEntries = $state<Entry[]>([]);
   let loadingExisting = $state(true);
   let existingError = $state('');
+  let existingSectionEl = $state<HTMLElement | null>(null);
   let liveCompetition = $state<Competition>(competition);
   let canDelete = $derived(liveCompetition.status === 'open');
 
@@ -250,6 +252,15 @@
       } else if (succeeded > 0 && failed > 0) {
         uploadSummary = `✓ ${succeeded} uploaded, ${failed} failed — see below.`;
       }
+      // The confirmation line sits right by the upload button, but "your
+      // uploads so far" (where the new thumbnail actually lands) is back
+      // up near the top of the page — easy to miss both if you don't
+      // scroll. Bring that section into view once the DOM has the new
+      // entry in it.
+      if (succeeded > 0) {
+        await tick();
+        existingSectionEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
   }
 
@@ -287,7 +298,7 @@
   {:else if existingError}
     <p class="danger">{existingError}</p>
   {:else if existingEntries.length > 0}
-    <h3 class="section-title">your uploads so far</h3>
+    <h3 class="section-title" bind:this={existingSectionEl}>your uploads so far</h3>
     {#if canDelete && existingEntries.length > 1}
       <p class="dim reorder-hint">drag <span aria-hidden="true">≡</span> to put your favourites first</p>
     {/if}
