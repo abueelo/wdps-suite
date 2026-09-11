@@ -203,6 +203,14 @@
        lines to travel through — the usual look of an online bracket,
        tall gaps between rounds narrowing down to the final. */
     align-self: center;
+    /* Grid items default to min-width: auto, which refuses to shrink
+       below the widest unbreakable content (a long contestant name) —
+       so a long enough title pushed the whole card past its one-column
+       track and bled into the neighboring column instead of ellipsizing
+       like it was supposed to. min-width: 0 here lets the card actually
+       shrink to its track's width so .slot .name's ellipsis can do its
+       job. */
+    min-width: 0;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -216,6 +224,7 @@
     display: flex;
     align-items: center;
     gap: 0.5cqw;
+    min-width: 0;
     color: #9a9689;
   }
   .slot .name {

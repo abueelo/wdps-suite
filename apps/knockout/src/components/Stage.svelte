@@ -196,8 +196,15 @@
     object-fit: contain;
   }
   .frame.bordered {
+    /* Shrunk slightly so the outline has room to sit fully outside the
+       image (outline-offset: 0) without getting clipped by the stage's
+       (or match pane's) overflow: hidden wherever the image is already
+       flush with an edge — a border guide has to show a real white
+       margin, not eat into the photo itself. */
+    max-width: calc(100% - 6px);
+    max-height: calc(100% - 6px);
     outline: 3px solid #fff;
-    outline-offset: -3px;
+    outline-offset: 0;
   }
   .heading {
     font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, "Liberation Mono", monospace;
