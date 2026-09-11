@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { tick } from 'svelte';
   import type { Competition, Entry } from '../../lib/types.js';
   import { filterAcceptedFiles } from '../../lib/upload/collectFiles.js';
   import { decodeForUpload } from '../../lib/upload/thumbnail.js';
@@ -46,7 +45,6 @@
   let existingEntries = $state<Entry[]>([]);
   let loadingExisting = $state(true);
   let existingError = $state('');
-  let existingSectionEl = $state<HTMLElement | null>(null);
   let liveCompetition = $state<Competition>(competition);
   let canDelete = $derived(liveCompetition.status === 'open');
 
@@ -124,11 +122,6 @@
   // through a multi-file batch it is, not just that it's busy.
   let uploadTotal = $state(0);
   let uploadDone = $state(0);
-  // Stays up after the batch finishes (outside the {#if rows.length > 0}
-  // block below) — the confirmed uploads land in "your uploads so far" at
-  // the top of the page, easy to miss if you're still scrolled down at
-  // the upload button, so this says right here whether it actually worked.
-  let uploadSummary = $state('');
 
   let disabledReason = $derived.by(() => {
     if (submitting) return '';
@@ -150,7 +143,6 @@
 
   async function addFiles(files: File[]) {
     collecting = true;
-    uploadSummary = '';
     try {
       const accepted = await filterAcceptedFiles(files);
       const newIds = accepted.map(() => crypto.randomUUID());
@@ -208,7 +200,6 @@
     submitting = true;
     uploadTotal = readyCount;
     uploadDone = 0;
-    uploadSummary = '';
     let succeeded = 0;
     let failed = 0;
     try {
@@ -247,20 +238,6 @@
       }
     } finally {
       submitting = false;
-      if (succeeded > 0 && failed === 0) {
-        uploadSummary = `✓ ${succeeded} image${succeeded === 1 ? '' : 's'} uploaded.`;
-      } else if (succeeded > 0 && failed > 0) {
-        uploadSummary = `✓ ${succeeded} uploaded, ${failed} failed — see below.`;
-      }
-      // The confirmation line sits right by the upload button, but "your
-      // uploads so far" (where the new thumbnail actually lands) is back
-      // up near the top of the page — easy to miss both if you don't
-      // scroll. Bring that section into view once the DOM has the new
-      // entry in it.
-      if (succeeded > 0) {
-        await tick();
-        existingSectionEl?.scrollIntoView({ behavior: 'auto', block: 'start' });
-      }
     }
   }
 
@@ -320,7 +297,7 @@
   {:else if existingError}
     <p class="danger">{existingError}</p>
   {:else if existingEntries.length > 0}
-    <h3 class="section-title" bind:this={existingSectionEl}>your uploads so far</h3>
+    <h3 class="section-title">your uploads so far</h3>
     {#if canDelete && existingEntries.length > 1}
       <p class="dim reorder-hint">drag <span aria-hidden="true">≡</span> to put your favourites first</p>
     {/if}
@@ -368,8 +345,6 @@
       </label>
     {/if}
   </div>
-
-  {#if uploadSummary}<p class="ok upload-summary">{uploadSummary}</p>{/if}
 
   {#if rows.length > 0}
     <p class="dim reorder-hint">drag <span aria-hidden="true">≡</span> to reorder</p>
@@ -527,9 +502,6 @@
     border-color: var(--danger);
   }
   .upload-warn {
-    margin-top: 1.25rem;
-  }
-  .upload-summary {
     margin-top: 1.25rem;
   }
   /* labels above the columns, same widths as the row grid below, so a
