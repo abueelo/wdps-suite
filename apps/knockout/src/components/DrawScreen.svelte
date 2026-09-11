@@ -48,11 +48,15 @@
   async function announceAdded(summary: string) {
     addSummary = summary;
     await tick();
-    // Not 'smooth' — an animated scroll here turned out to be
-    // unreliable (silently doing nothing in some real browser cases).
-    // An immediate jump always actually lands somewhere, which matters
-    // more than the animation.
-    contestantsSectionEl?.scrollIntoView({ behavior: 'auto', block: 'start' });
+    if (!contestantsSectionEl) return;
+    // Not scrollIntoView({block: 'start'}) — every .panel heading floats
+    // above its own border (`position: absolute; top: -0.85em` in the
+    // shared panel style), so aligning the panel's own top edge with the
+    // viewport top pushes that heading text above y=0 and clips it. Land
+    // a bit short instead, with room for the heading plus some breathing
+    // space above it.
+    const top = contestantsSectionEl.getBoundingClientRect().top + window.scrollY - 40;
+    window.scrollTo({ top, behavior: 'auto' });
   }
 
   function confirmRemoveBatch() {
