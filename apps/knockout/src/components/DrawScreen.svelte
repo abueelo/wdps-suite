@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ConfirmModal } from '@wdps/shared-ui';
   import type { Contestant, LiveSession } from '../lib/types.js';
   import { collectFromDataTransferItems, filterAcceptedFiles } from '../lib/intake/collectFiles.js';
   import { buildContestantsFromFiles } from '../lib/intake/localFiles.js';
@@ -34,6 +35,13 @@
   let competitionsLoading = $state(true);
   let competitionsError = $state('');
   let importingId = $state('');
+  let pendingRemoveBatch = $state<{ id: string; label: string; count: number } | null>(null);
+
+  function confirmRemoveBatch() {
+    if (!pendingRemoveBatch) return;
+    onRemoveImportBatch(pendingRemoveBatch.id);
+    pendingRemoveBatch = null;
+  }
 
   $effect(() => {
     listUploadPortalCompetitions()
@@ -197,7 +205,7 @@
         {#each importBatches as batch (batch.id)}
           <li>
             <span class="dim">imported: {batch.label} ({batch.count})</span>
-            <button type="button" class="btn danger" onclick={() => onRemoveImportBatch(batch.id)}>remove import</button>
+            <button type="button" class="btn danger" onclick={() => (pendingRemoveBatch = batch)}>remove import</button>
           </li>
         {/each}
       </ul>
@@ -212,6 +220,15 @@
       {#if contestants.length < 2}<span class="dim">need at least 2 contestants</span>{/if}
     </p>
   </section>
+{/if}
+
+{#if pendingRemoveBatch}
+  <ConfirmModal
+    message={`remove the ${pendingRemoveBatch.count} image${pendingRemoveBatch.count === 1 ? '' : 's'} imported from "${pendingRemoveBatch.label}"? this can't be undone.`}
+    confirmLabel="remove"
+    onConfirm={confirmRemoveBatch}
+    onCancel={() => (pendingRemoveBatch = null)}
+  />
 {/if}
 
 <style>

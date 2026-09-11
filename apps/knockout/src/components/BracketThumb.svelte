@@ -31,18 +31,18 @@
 </span>
 
 <style>
+  /* No box, no background or border — just the image, aspect ratio
+     intact, capped to a max size (bigger than the list thumbnails,
+     since these are the headline visual on the bracket). */
   .thumb {
-    display: inline-block;
-    width: 2.4cqw;
-    height: 2.4cqw;
-    background: #000;
-    border: 1px solid #555;
+    display: inline-flex;
     flex-shrink: 0;
   }
   .thumb img {
     display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+    max-width: 4.5cqw;
+    max-height: 4.5cqw;
+    width: auto;
+    height: auto;
   }
 </style>

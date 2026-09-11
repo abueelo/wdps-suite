@@ -29,18 +29,18 @@
 </span>
 
 <style>
+  /* No fixed box, no background or border — just the image itself, at
+     its own aspect ratio, capped small so a wildly oversized original
+     doesn't blow out the row. */
   .thumb {
-    display: inline-block;
-    width: 3.2rem;
-    height: 2.2rem;
-    background: #000;
-    border: 1px solid var(--border);
+    display: inline-flex;
     flex-shrink: 0;
   }
   .thumb img {
     display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+    max-width: 3.6rem;
+    max-height: 2.4rem;
+    width: auto;
+    height: auto;
   }
 </style>

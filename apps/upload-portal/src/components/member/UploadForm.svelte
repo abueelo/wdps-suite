@@ -122,6 +122,11 @@
   // through a multi-file batch it is, not just that it's busy.
   let uploadTotal = $state(0);
   let uploadDone = $state(0);
+  // Stays up after the batch finishes (outside the {#if rows.length > 0}
+  // block below) — the confirmed uploads land in "your uploads so far" at
+  // the top of the page, easy to miss if you're still scrolled down at
+  // the upload button, so this says right here whether it actually worked.
+  let uploadSummary = $state('');
 
   let disabledReason = $derived.by(() => {
     if (submitting) return '';
@@ -143,6 +148,7 @@
 
   async function addFiles(files: File[]) {
     collecting = true;
+    uploadSummary = '';
     try {
       const accepted = await filterAcceptedFiles(files);
       const newIds = accepted.map(() => crypto.randomUUID());
@@ -200,6 +206,9 @@
     submitting = true;
     uploadTotal = readyCount;
     uploadDone = 0;
+    uploadSummary = '';
+    let succeeded = 0;
+    let failed = 0;
     try {
       for (const row of rows) {
         if (row.status !== 'pending' && row.status !== 'error') continue;
@@ -225,15 +234,22 @@
           // source of truth for anything the server actually has.
           existingEntries = [...existingEntries, uploaded];
           rows = rows.filter((r) => r.id !== row.id);
+          succeeded++;
         } catch (err) {
           row.status = 'error';
           row.error = err instanceof Error ? err.message : 'upload failed';
+          failed++;
         } finally {
           uploadDone++;
         }
       }
     } finally {
       submitting = false;
+      if (succeeded > 0 && failed === 0) {
+        uploadSummary = `✓ ${succeeded} image${succeeded === 1 ? '' : 's'} uploaded.`;
+      } else if (succeeded > 0 && failed > 0) {
+        uploadSummary = `✓ ${succeeded} uploaded, ${failed} failed — see below.`;
+      }
     }
   }
 
@@ -316,6 +332,8 @@
       </label>
     {/if}
   </div>
+
+  {#if uploadSummary}<p class="ok upload-summary">{uploadSummary}</p>{/if}
 
   {#if rows.length > 0}
     <p class="dim reorder-hint">drag <span aria-hidden="true">≡</span> to reorder</p>
@@ -456,6 +474,9 @@
     font-size: 0.85em;
   }
   .upload-warn {
+    margin-top: 1.25rem;
+  }
+  .upload-summary {
     margin-top: 1.25rem;
   }
   /* labels above the columns, same widths as the row grid below, so a

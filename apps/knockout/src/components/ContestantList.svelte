@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ConfirmModal } from '@wdps/shared-ui';
   import type { Contestant } from '../lib/types.js';
   import Thumbnail from './Thumbnail.svelte';
 
@@ -11,6 +12,14 @@
   } = $props();
 
   let visible = $derived([...contestants].sort((a, b) => a.order - b.order));
+
+  let pendingRemove = $state<Contestant | null>(null);
+
+  function confirmRemove() {
+    if (!pendingRemove) return;
+    onRemove(pendingRemove.id);
+    pendingRemove = null;
+  }
 </script>
 
 <ul class="contestant-list">
@@ -19,12 +28,21 @@
       <Thumbnail blob={c.blob} filename={c.filename} />
       <span class="name">{c.title || c.filename}</span>
       {#if c.photographer}<span class="dim photographer">{c.photographer}</span>{/if}
-      <button type="button" class="btn danger" onclick={() => onRemove(c.id)}>remove</button>
+      <button type="button" class="btn danger" onclick={() => (pendingRemove = c)}>remove</button>
     </li>
   {:else}
     <li class="dim empty">no contestants yet</li>
   {/each}
 </ul>
+
+{#if pendingRemove}
+  <ConfirmModal
+    message={`remove "${pendingRemove.title || pendingRemove.filename}" from the draw? this can't be undone.`}
+    confirmLabel="remove"
+    onConfirm={confirmRemove}
+    onCancel={() => (pendingRemove = null)}
+  />
+{/if}
 
 <style>
   .contestant-list {

@@ -112,45 +112,66 @@
   }
 </script>
 
-<div class="tree" style:--columns={layout.columns} style:--rows={layout.rows}>
-  {#each layout.headings as h}
-    <div class="round-heading" style:grid-column={h.column}>{h.label}</div>
-  {/each}
+<div class="tree-outer">
+  <div class="tree" style:--columns={layout.columns} style:--rows={layout.rows}>
+    {#each layout.headings as h}
+      <div class="round-heading" style:grid-column={h.column}>{h.label}</div>
+    {/each}
 
-  {#each layout.matches as { match: m, column, rowStart, rowSpan } (m.id)}
-    {@const contestantA = byId(m.a)}
-    {@const contestantB = byId(m.b)}
-    <div class="match" style:grid-column={column} style:grid-row="{rowStart} / span {rowSpan}">
-      <div class="slot" class:winner={m.winnerId !== null && m.winnerId === m.a} class:loser={m.winnerId !== null && m.winnerId !== m.a}>
-        {#if contestantA}<BracketThumb blob={contestantA.blob} filename={contestantA.filename} />{/if}
-        <span class="name">{contestantA ? label(contestantA) : 'TBD'}</span>
+    {#each layout.matches as { match: m, column, rowStart, rowSpan } (m.id)}
+      {@const contestantA = byId(m.a)}
+      {@const contestantB = byId(m.b)}
+      <div class="match" style:grid-column={column} style:grid-row="{rowStart} / span {rowSpan}">
+        <div class="slot" class:winner={m.winnerId !== null && m.winnerId === m.a} class:loser={m.winnerId !== null && m.winnerId !== m.a}>
+          {#if contestantA}<BracketThumb blob={contestantA.blob} filename={contestantA.filename} />{/if}
+          <span class="name">{contestantA ? label(contestantA) : 'TBD'}</span>
+        </div>
+        {#if !m.bye}
+          <!-- A bye just shows the one contestant, already bold as the
+               winner above — no second row calling out that it was a
+               bye, it just reads as having gone through. -->
+          <div class="slot" class:winner={m.winnerId !== null && m.winnerId === m.b} class:loser={m.winnerId !== null && m.winnerId !== m.b}>
+            {#if contestantB}<BracketThumb blob={contestantB.blob} filename={contestantB.filename} />{/if}
+            <span class="name">{contestantB ? label(contestantB) : 'TBD'}</span>
+          </div>
+        {/if}
       </div>
-      <div class="slot" class:winner={!m.bye && m.winnerId !== null && m.winnerId === m.b} class:loser={!m.bye && m.winnerId !== null && m.winnerId !== m.b}>
-        {#if contestantB && !m.bye}<BracketThumb blob={contestantB.blob} filename={contestantB.filename} />{/if}
-        <span class="name">{m.bye ? '— bye —' : contestantB ? label(contestantB) : 'TBD'}</span>
+    {/each}
+
+    {#each layout.connectors as { column, rowStart, rowSpan, mirrored }}
+      <div class="connector" class:mirrored style:grid-column={column} style:grid-row="{rowStart} / span {rowSpan}">
+        <span class="tick-top"></span>
+        <span class="tick-bottom"></span>
+        <span class="spine"></span>
+        <span class="tick-out"></span>
       </div>
-    </div>
-  {/each}
+    {/each}
 
-  {#each layout.connectors as { column, rowStart, rowSpan, mirrored }}
-    <div class="connector" class:mirrored style:grid-column={column} style:grid-row="{rowStart} / span {rowSpan}">
-      <span class="tick-top"></span>
-      <span class="tick-bottom"></span>
-      <span class="spine"></span>
-      <span class="tick-out"></span>
-    </div>
-  {/each}
-
-  {#if totalRounds === 0}
-    <p class="empty">no bracket drawn yet</p>
-  {/if}
+    {#if totalRounds === 0}
+      <p class="empty">no bracket drawn yet</p>
+    {/if}
+  </div>
 </div>
 
 <style>
-  .tree {
-    container-type: inline-size;
+  /* Letterboxed to 16:9 regardless of the actual space available (a
+     projector screen, or a small embedded panel of some other shape) —
+     .tree-outer is size-contained to that real space, and .tree sizes
+     itself off *that* container's own cqw/cqh via the standard
+     min()-based aspect-ratio trick, then centers within it. */
+  .tree-outer {
+    container-type: size;
     position: absolute;
     inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tree {
+    container-type: inline-size;
+    position: relative;
+    width: min(100cqw, 177.78cqh);
+    height: min(100cqh, 56.25cqw);
     display: grid;
     grid-template-columns: repeat(var(--columns), 1fr);
     grid-template-rows: repeat(var(--rows), 1fr);
