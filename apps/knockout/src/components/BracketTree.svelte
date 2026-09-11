@@ -122,17 +122,29 @@
       {@const contestantA = byId(m.a)}
       {@const contestantB = byId(m.b)}
       <div class="match" style:grid-column={column} style:grid-row="{rowStart} / span {rowSpan}">
-        <div class="slot" class:winner={m.winnerId !== null && m.winnerId === m.a} class:loser={m.winnerId !== null && m.winnerId !== m.a}>
-          {#if contestantA}<BracketThumb blob={contestantA.blob} filename={contestantA.filename} />{/if}
-          <span class="name">{contestantA ? label(contestantA) : 'TBD'}</span>
+        <!-- Just the thumbnail, no printed name — the bracket reads as a
+             wall of photos, not a wall of text. aria-label keeps the
+             contestant's name available to screen readers even though
+             nothing on screen prints it. -->
+        <div
+          class="slot"
+          class:winner={m.winnerId !== null && m.winnerId === m.a}
+          class:loser={m.winnerId !== null && m.winnerId !== m.a}
+          aria-label={contestantA ? label(contestantA) : 'TBD'}
+        >
+          {#if contestantA}<BracketThumb blob={contestantA.blob} filename={contestantA.filename} />{:else}<span class="name">TBD</span>{/if}
         </div>
         {#if !m.bye}
           <!-- A bye just shows the one contestant, already bold as the
                winner above — no second row calling out that it was a
                bye, it just reads as having gone through. -->
-          <div class="slot" class:winner={m.winnerId !== null && m.winnerId === m.b} class:loser={m.winnerId !== null && m.winnerId !== m.b}>
-            {#if contestantB}<BracketThumb blob={contestantB.blob} filename={contestantB.filename} />{/if}
-            <span class="name">{contestantB ? label(contestantB) : 'TBD'}</span>
+          <div
+            class="slot"
+            class:winner={m.winnerId !== null && m.winnerId === m.b}
+            class:loser={m.winnerId !== null && m.winnerId !== m.b}
+            aria-label={contestantB ? label(contestantB) : 'TBD'}
+          >
+            {#if contestantB}<BracketThumb blob={contestantB.blob} filename={contestantB.filename} />{:else}<span class="name">TBD</span>{/if}
           </div>
         {/if}
       </div>

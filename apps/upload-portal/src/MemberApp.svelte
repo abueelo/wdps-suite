@@ -54,6 +54,22 @@
       h: () => { window.location.href = '/'; }
     });
   });
+
+  // This is a shared-device tool at a competition night — one laptop,
+  // one photographer at a time. Leaving the page (closing the tab,
+  // navigating off, or just going back) has to drop back to "pick a
+  // competition" rather than leave the next person looking at whoever
+  // used it last. This resets in-memory state only — the saved name
+  // convenience and the actual uploaded photos on the server are
+  // untouched, only what's currently on screen.
+  $effect(() => {
+    function reset() {
+      selected = null;
+      nameConfirmed = false;
+    }
+    window.addEventListener('pagehide', reset);
+    return () => window.removeEventListener('pagehide', reset);
+  });
 </script>
 
 <div class="page">

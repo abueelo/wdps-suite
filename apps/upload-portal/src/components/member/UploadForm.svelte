@@ -282,6 +282,28 @@
       deleteBusy = false;
     }
   }
+
+  let pendingDeleteAll = $state(false);
+  let deleteAllBusy = $state(false);
+
+  async function confirmDeleteAll() {
+    deleteAllBusy = true;
+    deleteError = '';
+    // No bulk-delete endpoint — go one at a time and drop each as it
+    // succeeds, same as the single-entry path, so a failure partway
+    // through still leaves the list showing exactly what's actually
+    // left on the server rather than an all-or-nothing guess.
+    for (const entry of existingEntries) {
+      try {
+        await deleteMyEntry(competition.id, entry.id, photographer);
+        existingEntries = existingEntries.filter((e) => e.id !== entry.id);
+      } catch (err) {
+        deleteError = err instanceof Error ? err.message : 'failed to remove one or more images';
+      }
+    }
+    deleteAllBusy = false;
+    pendingDeleteAll = false;
+  }
 </script>
 
 <section class="panel">
@@ -301,6 +323,9 @@
     <h3 class="section-title" bind:this={existingSectionEl}>your uploads so far</h3>
     {#if canDelete && existingEntries.length > 1}
       <p class="dim reorder-hint">drag <span aria-hidden="true">≡</span> to put your favourites first</p>
+    {/if}
+    {#if canDelete}
+      <button type="button" class="btn danger-btn remove-all-btn" onclick={() => (pendingDeleteAll = true)}>remove all</button>
     {/if}
     <div class="existing-grid">
       {#each existingEntries as entry, i (entry.id)}
@@ -433,6 +458,15 @@
   />
 {/if}
 
+{#if pendingDeleteAll}
+  <ConfirmModal
+    message={`Remove all ${existingEntries.length} of your images from this competition? This can't be undone.`}
+    confirmLabel={deleteAllBusy ? 'removing…' : 'remove all'}
+    onConfirm={confirmDeleteAll}
+    onCancel={() => (pendingDeleteAll = false)}
+  />
+{/if}
+
 <style>
   section.panel {
     --field-width: 18rem;
@@ -483,6 +517,14 @@
   .reorder-hint {
     margin-top: 1.25rem;
     font-size: 0.85em;
+  }
+  .remove-all-btn {
+    margin-top: 0.75rem;
+  }
+  .danger-btn:hover,
+  .danger-btn:focus-visible {
+    color: var(--danger);
+    border-color: var(--danger);
   }
   .upload-warn {
     margin-top: 1.25rem;
