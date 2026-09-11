@@ -551,7 +551,7 @@
     position: relative;
     background: #000;
     border: 1px solid var(--border);
-    height: 22rem;
+    height: 34rem;
     margin-top: 1rem;
   }
 </style>

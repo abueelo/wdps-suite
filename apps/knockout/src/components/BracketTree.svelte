@@ -14,6 +14,7 @@
   // shrunk into a small embedded panel — same trick Stage.svelte uses for
   // the title/match scenes.
   import type { Contestant, Match } from '../lib/types.js';
+  import BracketThumb from './BracketThumb.svelte';
 
   let { matches, contestants }: { matches: Match[]; contestants: Contestant[] } = $props();
 
@@ -121,10 +122,12 @@
     {@const contestantB = byId(m.b)}
     <div class="match" style:grid-column={column} style:grid-row="{rowStart} / span {rowSpan}">
       <div class="slot" class:winner={m.winnerId !== null && m.winnerId === m.a} class:loser={m.winnerId !== null && m.winnerId !== m.a}>
-        {contestantA ? label(contestantA) : 'TBD'}
+        {#if contestantA}<BracketThumb blob={contestantA.blob} filename={contestantA.filename} />{/if}
+        <span class="name">{contestantA ? label(contestantA) : 'TBD'}</span>
       </div>
-      <div class="slot" class:winner={m.winnerId !== null && m.winnerId === m.b} class:loser={m.winnerId !== null && m.winnerId !== m.b}>
-        {m.bye ? '— bye —' : contestantB ? label(contestantB) : 'TBD'}
+      <div class="slot" class:winner={!m.bye && m.winnerId !== null && m.winnerId === m.b} class:loser={!m.bye && m.winnerId !== null && m.winnerId !== m.b}>
+        {#if contestantB && !m.bye}<BracketThumb blob={contestantB.blob} filename={contestantB.filename} />{/if}
+        <span class="name">{m.bye ? '— bye —' : contestantB ? label(contestantB) : 'TBD'}</span>
       </div>
     </div>
   {/each}
@@ -170,17 +173,32 @@
     text-transform: uppercase;
   }
   .match {
+    /* Centered rather than stretched to fill its whole grid-row span —
+       without this, later rounds (which each span more rows, since
+       there are fewer matches sharing the same total height) would
+       balloon into an increasingly oversized box. Centering keeps every
+       match card the same compact size regardless of round; the growing
+       span just becomes more empty space either side for the connector
+       lines to travel through — the usual look of an online bracket,
+       tall gaps between rounds narrowing down to the final. */
+    align-self: center;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 0.3cqh;
+    gap: 0.4cqh;
     border: 1px solid #555;
-    padding: 0.5cqh 0.7cqw;
+    padding: 0.6cqh 0.7cqw;
     font-size: 1.15cqw;
     background: #000;
   }
   .slot {
+    display: flex;
+    align-items: center;
+    gap: 0.5cqw;
     color: #9a9689;
+  }
+  .slot .name {
+    min-width: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
