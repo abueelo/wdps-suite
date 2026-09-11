@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import { Divider, ThemeToggle, ConfirmModal } from '@wdps/shared-ui';
   import { bindShortcuts } from '@wdps/shared-ui/shortcuts';
   import { sessionStore } from './lib/session/store.svelte.js';
@@ -82,7 +83,7 @@
     return session.matches.some((m) => m.winnerId !== null && !m.bye);
   }
 
-  function performDraw() {
+  async function performDraw() {
     void sessionStore.update((s) => {
       s.matches = buildBracket(s.contestants.map((c) => c.id));
       s.drawn = true;
@@ -90,6 +91,11 @@
       s.scene = 'match';
     });
     confirmRedraw = false;
+    // Drawing swaps the whole draw screen out for the match workspace —
+    // land back at the top of the page instead of wherever the draw
+    // screen (or a scrolled-down match list, on a redraw) left off.
+    await tick();
+    window.scrollTo({ top: 0, behavior: 'auto' });
   }
 
   // Drawing fresh (nothing to lose) happens immediately; re-drawing an
@@ -99,7 +105,7 @@
   // impossible for the common non-power-of-two case.
   function handleDrawKey() {
     if (!session.drawn || !hasRealDecision()) {
-      performDraw();
+      void performDraw();
     } else {
       confirmRedraw = true;
     }
@@ -432,13 +438,6 @@
               <span class="key" aria-hidden="true">[←/→]</span> decide the current match
             </p>
           </section>
-
-          <details class="panel bracket-embed">
-            <summary><span class="bracket" aria-hidden="true">[ </span>bracket<span class="bracket" aria-hidden="true"> ]</span></summary>
-            <div class="bracket-frame">
-              <BracketTree matches={session.matches} contestants={session.contestants} />
-            </div>
-          </details>
         </div>
 
         <div class="col-main">
@@ -459,6 +458,13 @@
 
           <ExportPanel {session} bind:this={exportPanelRef} />
         </div>
+
+        <details class="panel bracket-embed">
+          <summary><span class="bracket" aria-hidden="true">[ </span>bracket<span class="bracket" aria-hidden="true"> ]</span></summary>
+          <div class="bracket-frame">
+            <BracketTree matches={session.matches} contestants={session.contestants} />
+          </div>
+        </details>
       </div>
     {/if}
 
@@ -545,13 +551,20 @@
     margin-top: 0.75rem;
   }
   .bracket-embed {
-    margin-top: 2.75rem;
+    /* Its own full-width row below the two columns, not squeezed into the
+       20rem sidebar — a bracket tree needs real horizontal room to be
+       readable. flex-basis: 100% forces the wrap in .workspace's
+       flex-wrap layout regardless of where col-list/col-main leave off. */
+    flex: 1 1 100%;
+    margin-top: 1rem;
   }
   .bracket-frame {
     position: relative;
     background: #000;
     border: 1px solid var(--border);
-    height: 34rem;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    max-height: 44rem;
     margin-top: 1rem;
   }
 </style>
