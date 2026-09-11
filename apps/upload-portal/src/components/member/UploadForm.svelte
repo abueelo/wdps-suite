@@ -259,7 +259,7 @@
       // entry in it.
       if (succeeded > 0) {
         await tick();
-        existingSectionEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        existingSectionEl?.scrollIntoView({ behavior: 'auto', block: 'start' });
       }
     }
   }

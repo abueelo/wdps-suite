@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import { ConfirmModal } from '@wdps/shared-ui';
   import type { Contestant, LiveSession } from '../lib/types.js';
   import { collectFromDataTransferItems, filterAcceptedFiles } from '../lib/intake/collectFiles.js';
@@ -37,6 +38,23 @@
   let importingId = $state('');
   let pendingRemoveBatch = $state<{ id: string; label: string; count: number } | null>(null);
 
+  // "contestants" is its own panel below load-contestants / upload-portal /
+  // resume-project, so it can end up well below the fold — added files
+  // land there with no other sign anything happened. This says so, and
+  // scrolls down to it once the new contestants are actually in the DOM.
+  let addSummary = $state('');
+  let contestantsSectionEl = $state<HTMLElement | null>(null);
+
+  async function announceAdded(summary: string) {
+    addSummary = summary;
+    await tick();
+    // Not 'smooth' — an animated scroll here turned out to be
+    // unreliable (silently doing nothing in some real browser cases).
+    // An immediate jump always actually lands somewhere, which matters
+    // more than the animation.
+    contestantsSectionEl?.scrollIntoView({ behavior: 'auto', block: 'start' });
+  }
+
   function confirmRemoveBatch() {
     if (!pendingRemoveBatch) return;
     onRemoveImportBatch(pendingRemoveBatch.id);
@@ -68,18 +86,28 @@
     if (competition.status !== 'locked') return;
     importingId = competition.id;
     competitionsError = '';
+    let added = 0;
     try {
       onContestantsReady(await importUploadPortalCompetition(competition.id, contestants.length));
+      added = competition.entryCount;
     } catch (err) {
       competitionsError = err instanceof Error ? err.message : 'could not import that competition';
     } finally {
+      // Reset the button text (and any other layout it disturbs) *before*
+      // scrolling — doing it after starts a smooth scroll into a page
+      // that's about to reflow underneath it, which cancels the scroll
+      // before it gets anywhere.
       importingId = '';
+    }
+    if (added > 0) {
+      await announceAdded(`✓ imported ${added} image${added === 1 ? '' : 's'} from "${competition.name}".`);
     }
   }
 
   async function addFiles(files: File[]) {
     busy = true;
     error = '';
+    let addedCount = 0;
     try {
       const accepted = await filterAcceptedFiles(files);
       if (accepted.length === 0) {
@@ -87,8 +115,14 @@
         return;
       }
       onContestantsReady(buildContestantsFromFiles(accepted, contestants.length));
+      addedCount = accepted.length;
     } finally {
+      // Same reasoning as importCompetition: let the dropzone settle back
+      // out of "reading files…" before starting the scroll.
       busy = false;
+    }
+    if (addedCount > 0) {
+      await announceAdded(`✓ ${addedCount} image${addedCount === 1 ? '' : 's'} added.`);
     }
   }
 
@@ -197,8 +231,9 @@
 </section>
 
 {#if contestants.length > 0}
-  <section class="panel">
+  <section class="panel" bind:this={contestantsSectionEl}>
     <h2><span class="bracket" aria-hidden="true">[ </span>contestants ({contestants.length})<span class="bracket" aria-hidden="true"> ]</span></h2>
+    {#if addSummary}<p class="ok add-summary">{addSummary}</p>{/if}
 
     {#if importBatches.length > 0}
       <ul class="import-batches">
@@ -276,5 +311,8 @@
     align-items: center;
     gap: 1ch;
     flex-wrap: wrap;
+  }
+  .add-summary {
+    margin-top: 0.5rem;
   }
 </style>
