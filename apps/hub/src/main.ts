@@ -20,7 +20,8 @@ bindShortcuts({
   t: () => toggle.click(),
   c: () => { window.location.href = '/comp-sheets/'; },
   u: () => { window.location.href = '/upload-portal/'; },
-  p: () => { window.location.href = '/presenter/'; }
+  p: () => { window.location.href = '/presenter/'; },
+  k: () => { window.location.href = '/knockout/'; }
 });
 
 setFooterYear();

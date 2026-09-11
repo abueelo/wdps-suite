@@ -6,7 +6,7 @@
 // callback to read, rather than needing a second registered callback URL.
 import { randomHex, secureFlag } from '../_lib.js';
 
-const RETURN_TARGETS = new Set(['/upload-portal/owner.html', '/presenter/']);
+const RETURN_TARGETS = new Set(['/upload-portal/owner.html', '/presenter/', '/knockout/']);
 const DEFAULT_RETURN = '/upload-portal/owner.html';
 
 export async function onRequestGet({ request, env }) {

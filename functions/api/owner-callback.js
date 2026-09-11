@@ -1,6 +1,6 @@
 import { OWNER, getCookie, makeSessionCookie, secureFlag, appendLog } from '../_lib.js';
 
-const RETURN_TARGETS = new Set(['/upload-portal/owner.html', '/presenter/']);
+const RETURN_TARGETS = new Set(['/upload-portal/owner.html', '/presenter/', '/knockout/']);
 const DEFAULT_RETURN = '/upload-portal/owner.html';
 
 function clearCookies(request) {
